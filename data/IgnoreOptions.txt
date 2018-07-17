@@ -1,0 +1,6 @@
+weeknum is ignore? False
+loadtype is ignore? 
+termnum is ignore? False
+sharpness is ignore? 
+login is ignore? False
+root is ignore? False
