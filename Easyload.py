@@ -436,7 +436,7 @@ def general_view(courseinfo,root):
             6:'讨论',#讨论
             }
     with open(root+os.sep+rename(coursename)+os.sep+\
-        'General_View.txt','w',encoding='utf-8') as f:
+        'General_View.txt','w',encoding='utf-8', newline='\r\n') as f:
         s='{}_课程概览'.format(rename(coursename)).center(60,'=')+'\n'
         for chapter in chapters:
             s+='{}\n'.format(chapter.get('name'))
