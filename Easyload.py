@@ -168,11 +168,12 @@ class Courseware():
                 for i in range(3):
                     try:
                         if self.contentType==1:
-                            f=self.getvideo()
+                            p = self.getvideo()
                         elif self.contentType==3:
-                            f=self.getpdf()
+                            p = self.getpdf()
                         elif self.contentType==4:
-                            f=self.getenclosure()
+                            p = self.getenclosure()
+                        f = Networkfile(*p)
                         break
                     except:
                         if i<2:
@@ -196,6 +197,19 @@ class Courseware():
             else:
                 print('[Info]文件{}已存在1'.format(self.name))
 
+    def getCourseJSON(self, jsonData):
+        try:
+            if self.contentType==1:
+                p = self.getvideo()
+            elif self.contentType==3:
+                p = self.getpdf()
+            elif self.contentType==4:
+                p = self.getenclosure()
+        except:
+            p = (None, self.path)
+        jsonData.append(list(p))
+        return jsonData
+
     def getvideo(self):
         headers={'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 7.0; SM-G9300 Build/NRD90M)',\
                  'mob-token': self.mob_token\
@@ -207,7 +221,7 @@ class Courseware():
         headers={'User-Agent': 'AndroidDownloadManager'}
         params={'key':k,\
                 'Xtask':str(self.cid)+'_'+str(self.tid)+'_'+str(self.unitid)}
-        return Networkfile(self.vurl,self.path,params)
+        return self.vurl, self.path, params
 
     def getpdf(self):
         url='http://www.icourse163.org/mob/course/learn/v1'
@@ -217,13 +231,13 @@ class Courseware():
               'mob-token': self.mob_token}
         r=requests.post(url,data=data).content
         pdf=json.loads(r.decode('utf8')).get("results").get('learnInfo').get("textOrigUrl")    
-        return Networkfile(pdf,self.path)
+        return pdf, self.path
 
     def getenclosure(self):
         url='http://www.icourse163.org/mob/course/attachment.htm'
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'}
         params=self.jsonContent
-        return Networkfile(url,self.path,params)
+        return url, self.path, params
         
 #用户界面：（命令行）
 def login(ignore=False):
