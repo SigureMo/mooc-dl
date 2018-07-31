@@ -6,13 +6,13 @@ import random
 import time
 import hashlib
 import platform
-import multiprocessing
+#import multiprocessing
 
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
 
-from siguretools.network_file import Networkfile
-from siguretools.config import Config
+from tools.network_file import Networkfile
+from tools.config import Config
 
 
 def getterminfos(cid):
@@ -552,8 +552,8 @@ if __name__=='__main__':
         general_view(courseinfo,root)             #课程概览
         playlist(coursename,coursewares,root)     #播放列表
         #########################processes##########################
-        import mul_process_package         #for_多进程打包
-        multiprocessing.freeze_support()  #for_多进程打包
+        #import mul_process_package         #for_多进程打包
+        #multiprocessing.freeze_support()  #for_多进程打包
         if config.get('process_num'):
             try:
                 if 3<=eval(config.process_num)<=10:
