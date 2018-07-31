@@ -22,6 +22,11 @@
 8. 近期版本更迭较大，测试并不全面，如有bug产生，请尽快联系我（Q:2537625460）
 9. CSDN处仅提供1.5版本，由于本人一直在用，所以会持续更新，逐渐增加新功能，想获取新版本的可通过QQ联系我。另外本人尚处于初学阶段，欢迎大家加好友交流
 
+# 参考链接：
+1. [python编写断点续传下载软件](https://www.leavesongs.com/PYTHON/resume-download-from-break-point-tool-by-python.html)
+2. [Python实现下载界面(带进度条，断点续传，多线程多任务下载等)](http://blog.51cto.com/eddy72/2106091)
+3. [Python GUI之tkinter 实战（二）tkinter+多线程](https://blog.csdn.net/yingshukun/article/details/78838395)
+4. [用PyQt5写的第一个程序](https://www.cnblogs.com/archisama/p/5444032.html)
 
 # 更新日志：
 ## 版本号：1.6
@@ -30,16 +35,17 @@
 1. 本版本起，本项目托管于GitHub
 2. 修改概览文件换行符，解决排版错乱问题
 3. 新增getCourseJSON接口，方便以后远程调用
+4. 整理文件结构，取消siguretools包的使用和更新，改为内置tools包
 
 ## 版本号：1.5
 ## 发布日期：2018.06.30（CSDN）：
 ## 内容：
-1. 合并Easyload.py与Easyload2.py，仅保留新版本
+1. 合并`Easyload.py`与`Easyload2.py`，仅保留新版本
 2. 对预设值进行优化
-    >（根据对已‘订阅’下载的15门课程各类课件大小进行统计，得到平均值如下：
+    >根据对已‘订阅’下载的15门课程各类课件大小进行统计，得到平均值如下：
     >    * video：94.81MB
     >    * pdf：0.61MB
-    >    * 附件：1.02MB）
+    >    * 附件：1.02MB
 3. 新增自动生成播放列表（Playlist.m3u）机制，以便按照顺序学习视频（就不用对照课程概览一个一个找啦）
 4. 优化tid提取机制，同时增加往期课程下载功能（包括已关闭学期）
 5. 支持多系统指向各自系统内路径（仅区分操作系统类型，不区分版本）

@@ -1,5 +1,5 @@
 from Easyload import *
-from siguretools.config import Config
+from tools.config import Config
 if __name__=='__main__':
     def isignore(config,attr):
         try:
@@ -73,8 +73,8 @@ if __name__=='__main__':
         general_view(courseinfo,root)        #课程概览
         playlist(coursename,coursewares,root)#播放列表
         #########################processes##########################
-        import mul_process_package         #for_多进程打包
-        multiprocessing.freeze_support()  #for_多进程打包
+        #import mul_process_package         #for_多进程打包
+        #multiprocessing.freeze_support()  #for_多进程打包
         if config.get('process_num'):
             try:
                 if 3<=eval(config.process_num)<=10:
