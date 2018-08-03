@@ -113,6 +113,7 @@ class Courseware():
 
         if self.contentType==1:#视频
             self.resourceInfo=self.unit.get('resourceInfo')
+            self.contentId=self.unit.get('contentId')
             if self.resourceInfo.get(shdict2[sharpness]):
                 self.extension=shdict1[sharpness]
                 self.vurl=self.resourceInfo.get(shdict2[sharpness])
@@ -122,6 +123,12 @@ class Courseware():
             else:
                 self.extension='.mp4'
                 self.vurl=self.resourceInfo.get('sdMp4Url')
+            self.srtKeys = self.resourceInfo.get('srtKeys')
+            if self.srtKeys:
+                self.srtDict = {
+                    0: 'zh-cn',
+                    1: 'en',
+                    }
             self.path=self.lessondir+os.sep+self.unitname+self.extension
             self.name=self.unitname+self.extension
             self.size0=95*1024*1024#预设值
@@ -169,6 +176,8 @@ class Courseware():
                     try:
                         if self.contentType==1:
                             p = self.getvideo()
+                            if self.srtKeys:
+                                self.getSrts()
                         elif self.contentType==3:
                             p = self.getpdf()
                         elif self.contentType==4:
@@ -223,6 +232,26 @@ class Courseware():
                 'Xtask':str(self.cid)+'_'+str(self.tid)+'_'+str(self.unitid)}
         return self.vurl, self.path, params
 
+    def getSrts(self):
+        self.srtPaths = []
+        headers = {
+            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 8.0.0; SM-G9300 Build/R16NW)',
+            }
+        data = {
+            't': 1,
+            'mob-token': self.mob_token,
+            'unitId': self.unitid,
+            'cid': self.contentId,
+            }
+        response = requests.post('https://www.icourse163.org/mob/course/learn/v1',data = data)
+        for srtKey in response.json()['results']['learnInfo']['srtKeys']:
+            path = self.lessondir + os.sep + self.unitname + \
+                   '[' + self.srtDict.get(srtKey['lang'], '未知语言') + ']' + '.srt'
+            url = srtKey['nosUrl']
+            self.srtPaths.append(path)
+            with open(path, 'wb') as f:
+                f.write(requests.get(url).content)
+        
     def getpdf(self):
         url='http://www.icourse163.org/mob/course/learn/v1'
         data={'t':3,\
