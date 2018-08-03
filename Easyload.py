@@ -498,6 +498,15 @@ def playlist(coursename,coursewares,root):
             if courseware.contentType==1:
                 s+='{}/{}/{}\n'.format(courseware.chaptername,courseware.lessonname,courseware.name)
         f.write(s)
+    with open(root+os.sep+rename(coursename)+os.sep+\
+        'Playlist.dpl','w',encoding='utf-8') as f:
+        s='DAUMPLAYLIST\n'
+        num = 1
+        for courseware in coursewares:
+            if courseware.contentType==1:
+                s+='{}*file*{}\n'.format(num, courseware.path.replace(r'\\', '\\'))
+                num += 1
+        f.write(s)
 
 def getcoursewares(courseinfo,root,mob_token,sharpness):
     chapters=courseinfo.get('results').get('termDto').get('chapters')
