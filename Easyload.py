@@ -6,14 +6,17 @@ import random
 import time
 import hashlib
 import platform
+import queue
 #import multiprocessing
 
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
+from multiprocessing.dummy import Pool as ThreadPool 
 
 from tools.network_file import Networkfile
 from tools.config import Config
 
+version = (1, 6, 6)
 
 def getterminfos(cid):
     response=requests.get('https://www.icourse163.org/course/DUT-{}#/info'.format(cid))
@@ -74,12 +77,16 @@ def gettoken(username,passwd):
     elif j.get("status").get("code")==100:
         return [None,\
                 j.get("status").get("code")]
+    else:
+        return [None,\
+                j.get("status").get("code")]
 
 class Courseware():
-    def __init__(self,courseinfo,chapternum,lessonnum,unitnum,root,mob_token,sharpness):
+    def __init__(self,courseinfo,chapternum,lessonnum,unitnum,root,mob_token,sharpness,infoQ):
+        self.infoQ = infoQ
         courseDto=courseinfo.get('results').get('courseDto')
         cid=courseDto.get('id')
-        coursename=courseDto.get('name')
+        self.coursename=courseDto.get('name')
         tid=courseDto.get('currentTermId')
         shdict1={'sd':'.mp4','hd':'.mp4','shd':'.flv'}
         shdict2={'sd':'sdMp4Url','hd':'videoHDUrl','shd':'videoSHDUrl'}
@@ -102,7 +109,7 @@ class Courseware():
         self.lesson=self.chapter.get('lessons')[lessonnum]
         self.unit=self.lesson.get('units')[unitnum]
 
-        self.coursedir=root+os.sep+rename(coursename)
+        self.coursedir=root+os.sep+rename(self.coursename)
         self.chaptername=rename(self.chapter.get('name'))
         self.chapterdir=self.coursedir+os.sep+self.chaptername
         self.lessonname=rename(self.lesson.get('name'))
@@ -182,29 +189,28 @@ class Courseware():
                             p = self.getpdf()
                         elif self.contentType==4:
                             p = self.getenclosure()
-                        f = Networkfile(*p)
+                        self.f = Networkfile(*p)
                         break
                     except:
                         if i<2:
-                            print('[Loading]{}资源请求失败！正在重试'.format(self.name))
+                            self.print('[Loading]{}资源请求失败！正在重试'.format(self.name))
                         else:
-                            print('[Error]{}资源请求失败！请稍后重试！'.format(self.name))
+                            self.print('[Error]{}资源请求失败！请稍后重试！'.format(self.name))
 
-            
-                if f.local_size<f.size:
-                    print('[Loading]开始下载{}'.format(self.name))
+                if self.f.local_size<self.f.size:
+                    self.print('[Loading]开始下载{}'.format(self.name))
                     try:
-                        f.download()
-                        if f.local_size>=f.size:
-                            print('[Success]{}下载成功！'.format(self.name))
+                        self.f.download()
+                        if self.f.local_size>=self.f.size:
+                            self.print('[Success]{}下载成功！'.format(self.name))
                         else:
-                            print('[Error]{}文件不完整！')
+                            self.print('[Error]{}文件不完整！')
                     except:
-                        print('[Info]{}下载失败！'.format(self.name))
+                        self.print('[Info]{}下载失败！'.format(self.name))
                 else:
-                    print('[Info]文件{}已存在2'.format(self.name))
+                    self.print('[Info]文件{}已存在2'.format(self.name))
             else:
-                print('[Info]文件{}已存在1'.format(self.name))
+                self.print('[Info]文件{}已存在1'.format(self.name))
 
     def getCourseJSON(self, jsonData):
         try:
@@ -267,6 +273,12 @@ class Courseware():
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'}
         params=self.jsonContent
         return url, self.path, params
+
+    def print(self, string):
+        if self.infoQ:
+            self.infoQ.put(string)
+        else:
+            print(string)
         
 #用户界面：（命令行）
 def login(ignore=False):
@@ -508,7 +520,7 @@ def playlist(coursename,coursewares,root):
                 num += 1
         f.write(s)
 
-def getcoursewares(courseinfo,root,mob_token,sharpness):
+def getcoursewares(courseinfo,root,mob_token,sharpness,infoQ = ''):
     chapters=courseinfo.get('results').get('termDto').get('chapters')
     coursewares=[]
     chapternum=0 
@@ -525,6 +537,7 @@ def getcoursewares(courseinfo,root,mob_token,sharpness):
                         root,\
                         mob_token,\
                         sharpness,\
+                        infoQ,
                         ))
                 unitnum+=1
             lessonnum+=1
