@@ -7,6 +7,7 @@ import time
 import hashlib
 import platform
 import queue
+import logging
 #import multiprocessing
 
 from bs4 import BeautifulSoup
@@ -17,6 +18,19 @@ from tools.network_file import Networkfile
 from tools.config import Config
 
 version = (1, 6, 6)
+#logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(level = logging.INFO)
+handler = logging.FileHandler(time.strftime('logs/'+'%Y%m%d%H%M', time.localtime(time.time()))+'.log')
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+
+logger.addHandler(handler)
+logger.addHandler(console)
 
 def getterminfos(cid):
     response=requests.get('https://www.icourse163.org/course/DUT-{}#/info'.format(cid))
@@ -204,9 +218,18 @@ class Courseware():
                         if self.f.local_size>=self.f.size:
                             self.print('[Success]{}下载成功！'.format(self.name))
                         else:
-                            self.print('[Error]{}文件不完整！')
-                    except:
+                            for i in range(3):
+                                if i < 2:
+                                    self.print('[Error]{}文件不完整！正在重试……'.format(self.name))
+                                    os.remove(self.path)
+                                    self.f.download()
+                                else:
+                                    self.print('[Error]{}文件不完整！请自行核实文件完整性……'.format(self.name))
+                    except (SystemExit, KeyboardInterrupt):
+                        raise
+                    except Exception:
                         self.print('[Info]{}下载失败！'.format(self.name))
+                        logger.error("Faild to open sklearn.txt from logger.error",exc_info = True)
                 else:
                     self.print('[Info]文件{}已存在2'.format(self.name))
             else:
@@ -278,7 +301,8 @@ class Courseware():
         if self.infoQ:
             self.infoQ.put(string)
         else:
-            print(string)
+            logger.info(string)
+            #print(string)
         
 #用户界面：（命令行）
 def login(ignore=False):

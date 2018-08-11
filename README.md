@@ -37,13 +37,30 @@
 3. [Python GUI之tkinter 实战（二）tkinter+多线程](https://blog.csdn.net/yingshukun/article/details/78838395)
 4. [用PyQt5写的第一个程序](https://www.cnblogs.com/archisama/p/5444032.html)
 
+# 安装依赖：
+1. requests
+> `pip install requests`
+2. bs4
+> `pip install BeautifulSoup4`
+3. pyqt5 <- 仅`MOOC_Downloading.py`
+> `pip install pyqt5`
+* 若linux下直接安装失败，请使用 `sudo python3 -m pip install <moduleName>`
+* 若因为安装速度过慢而安装失败，请加参数`-i https://pypi.tuna.tsinghua.edu.cn/simple/`
+
 # 更新日志：
+## 版本号：1.7
+## 发布日期：开发中
+## 内容：
+1. 修正GUI中由于未对`isLoad`进行检测而造成的下载错乱问题
+2. 增加下载意外中断后重检机制
+3. 增加日志文件
+
 ## 版本号：1.6
 ## 发布日期：2018.08.04
 ## 内容：
 1. 本版本起，本项目托管于GitHub
 2. 修改概览文件换行符，解决排版错乱问题
-3. 新增getCourseJSON接口，方便以后远程调用
+3. 新增getCourseJSON接口，方便将来服务器端的调用
 4. 整理文件结构，取消siguretools包的使用和更新，改为内置tools包
 5. 新增字幕（.srt）下载功能，播放器可以自动加载字幕文件，若未加载或加载字幕少可手动添加字幕/次字幕
 6. 为了获得更大的兼容性，修改播放列表格式为dpl，暂时保留旧播放列表playlist.m3u
@@ -126,4 +143,4 @@
 2. 热心网友H发现新‘类型’：字幕，并对播放列表格式提出建议
 
 # 关于
-#### Sigure_Mo Python新手，于中国大学MOOC下嵩天老师的Python语言程序设计自学Python，从Python开始逐渐接触各方面计算机知识，从此一发不可收，正在逐渐向计算机专业方向转型
+Sigure_Mo Python新手，于中国大学MOOC下嵩天老师的Python语言程序设计自学Python，从Python开始逐渐接触各方面计算机知识，从此一发不可收，正在逐渐向计算机专业方向转型
