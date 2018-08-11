@@ -8,6 +8,7 @@
 3. `MOOC_Downloading.py` GUI，暂时Bug多且功能不完善，不建议使用
 4. `data` 存放命令行版和GUI版各自的用户数据
 5. `tools` 存放程序依赖的一些class
+6. `logs` 存放日志文件
 
 ## 程序流程：
 1. 账号密码
