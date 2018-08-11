@@ -220,7 +220,8 @@ class Canvas(QWidget):
                                              self.settings.get('mob_token'), \
                                              courseConfig.get('sharpness','sd'), \
                                              self.infoQ)
-                courses.append((coursewares, courseConfig.get('weekNum',[0]), courseConfig.get('loadType',[1,3,4])))
+                if courseConfig.get('isLoad',False):
+                    courses.append((coursewares, courseConfig.get('weekNum',[0]), courseConfig.get('loadType',[1,3,4])))
             self.infoText.append('[Info]初始化完成，开始下载')
             for course in courses:
                 coursewares = course[0]
