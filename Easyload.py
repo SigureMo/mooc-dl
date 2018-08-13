@@ -12,12 +12,12 @@ import logging
 
 from bs4 import BeautifulSoup
 from multiprocessing import Pool
-from multiprocessing.dummy import Pool as ThreadPool 
+#from multiprocessing.dummy import Pool as ThreadPool 
 
 from tools.network_file import Networkfile
 from tools.config import Config
 
-version = (1, 6, 6)
+version = (1, 7, 3)
 #logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(level = logging.INFO)
@@ -526,23 +526,29 @@ def general_view(courseinfo,root):
                             +unit.get('name').replace('\n',''))
         f.write(s)
 
-def playlist(coursename,coursewares,root):
+def playlist(coursename,coursewares,root, mode='RP'):
     with open(root+os.sep+rename(coursename)+os.sep+\
         'Playlist.m3u','w',encoding='utf-8') as f:
         s=''
         for courseware in coursewares:
             if courseware.contentType==1:
-                s+='{}/{}/{}\n'.format(courseware.chaptername,courseware.lessonname,courseware.name)
+                if mode == 'AP':
+                    s+='{}\n'.format(courseware.path.replace(r'\\', '\\'))                               #绝对路径
+                else:
+                    s+='{}/{}/{}\n'.format(courseware.chaptername,courseware.lessonname,courseware.name) #相对路径
         f.write(s)
-    with open(root+os.sep+rename(coursename)+os.sep+\
-        'Playlist.dpl','w',encoding='utf-8') as f:
-        s='DAUMPLAYLIST\n'
-        num = 1
-        for courseware in coursewares:
-            if courseware.contentType==1:
-                s+='{}*file*{}\n'.format(num, courseware.path.replace(r'\\', '\\'))
-                num += 1
-        f.write(s)
+    if os.path.exists(root+os.sep+rename(coursename)+os.sep+'Playlist.dpl'):
+        os.remove(root+os.sep+rename(coursename)+os.sep+'Playlist.dpl')
+    # with open(root+os.sep+rename(coursename)+os.sep+\
+    #    'Playlist.dpl','w',encoding='utf-8') as f:
+    #    s='DAUMPLAYLIST\n'
+    #    num = 1
+    #     for courseware in coursewares:
+    #         if courseware.contentType==1:
+    #             s+='{}*file*{}\n'.format(num, courseware.path.replace(r'\\', '\\'))
+    #             #s+='{}*file*{}\\{}\\{}\n'.format(num,courseware.chaptername,courseware.lessonname,courseware.name)
+    #             num += 1
+    #     f.write(s)
 
 def getcoursewares(courseinfo,root,mob_token,sharpness,infoQ = ''):
     chapters=courseinfo.get('results').get('termDto').get('chapters')
@@ -624,8 +630,12 @@ if __name__=='__main__':
             time.sleep(0.2)
             print('\r下载进程召唤术'+i,end='')
         print()
-        general_view(courseinfo,root)             #课程概览
-        playlist(coursename,coursewares,root)     #播放列表
+        
+        if not config.get('playListMode'):
+            config.playListMode = 'AP'
+        config.save()
+        general_view(courseinfo,root)                                         #课程概览
+        playlist(coursename,coursewares,root, config.get('playListMode'))     #播放列表
         #########################processes##########################
         #import mul_process_package         #for_多进程打包
         #multiprocessing.freeze_support()  #for_多进程打包
