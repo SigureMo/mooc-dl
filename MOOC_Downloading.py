@@ -227,7 +227,7 @@ class Canvas(QWidget):
                 coursewares = course[0]
                 self.infoText.append('[Info]当前下载课程：{}'.format(coursewares[0].coursename))
                 general_view(courseConfig.get('courseinfo'), self.settings.get(platform.system()+'Root', os.path.expanduser("~")+os.sep+'Desktop'))
-                playlist(coursewares[0].coursename, coursewares, self.settings.get(platform.system()+'Root', os.path.expanduser("~")+os.sep+'Desktop'))
+                playlist(coursewares[0].coursename, coursewares, self.settings.get(platform.system()+'Root', os.path.expanduser("~")+os.sep+'Desktop'),'RP')
 
                 for courseware in coursewares:
                     self.taskQ.put((courseware, course[1], course[2]))

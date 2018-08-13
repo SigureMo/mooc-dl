@@ -70,8 +70,12 @@ if __name__=='__main__':
         print('获取链接中，很快就好哒！')
         coursewares=getcoursewares(courseinfo,root,mob_token,sharpness)
         print('下载进程召唤术...')
-        general_view(courseinfo,root)        #课程概览
-        playlist(coursename,coursewares,root)#播放列表
+        
+        if not config.get('playListMode'):
+            config.playListMode = 'RP'
+        config.save()
+        general_view(courseinfo,root)                                    #课程概览
+        playlist(coursename,coursewares,root,config.get('playListMode')) #播放列表
         #########################processes##########################
         #import mul_process_package         #for_多进程打包
         #multiprocessing.freeze_support()  #for_多进程打包
