@@ -1,5 +1,4 @@
 from Easyload import *
-from tools.config import Config
 if __name__=='__main__':
     def isignore(config,attr):
         try:
@@ -91,10 +90,10 @@ if __name__=='__main__':
             process_num=5
         config.process_num=str(process_num)
         config.save()
-        pool=Pool(process_num)                     #同时启动的进程数
+        pool = ThreadPool(process_num)
         for courseware in coursewares:
-            pool.apply_async(courseware.download, args=(weeknum,loadtype))
-        pool.close()
+            pool.addTask(courseware.download, args=(weeknum,loadtype))
+        pool.run()
         pool.join()
         ##########################单进程#################################
         # for courseware in coursewares:

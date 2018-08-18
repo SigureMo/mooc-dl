@@ -8,16 +8,17 @@ import hashlib
 import platform
 import queue
 import logging
-#import multiprocessing
+# import multiprocessing
 
 from bs4 import BeautifulSoup
-from multiprocessing import Pool
-#from multiprocessing.dummy import Pool as ThreadPool 
+# from multiprocessing import Pool
+# from multiprocessing.dummy import Pool as ThreadPool
 
 from tools.network_file import Networkfile
 from tools.config import Config
+from tools.multithreading import ThreadPool
 
-version = (1, 7, 3)
+version = (1, 7, 5)
 #logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(level = logging.INFO)
@@ -651,10 +652,15 @@ if __name__=='__main__':
             process_num=5
         config.process_num=str(process_num)
         config.save()
-        pool=Pool(process_num)                     #同时启动的进程数
+        # pool=Pool(process_num)                     #同时启动的进程数
+        # for courseware in coursewares:
+        #     pool.apply_async(courseware.download, args=(weeknum,loadtype))
+        # pool.close()
+        # pool.join()
+        pool = ThreadPool(process_num)
         for courseware in coursewares:
-            pool.apply_async(courseware.download, args=(weeknum,loadtype))
-        pool.close()
+            pool.addTask(courseware.download, args=(weeknum,loadtype))
+        pool.run()
         pool.join()
         ##########################单进程#################################
         # for courseware in coursewares:
