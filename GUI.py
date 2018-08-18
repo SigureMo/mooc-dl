@@ -1,12 +1,8 @@
 import sys
-import requests
-import hashlib
 import os
-import json
-import time
-import platform
-import queue
-import threading
+sys.path.append(os.path.abspath('..'))
+from MOOC_Downloading import VERSION as version
+from Easyload import *
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
@@ -15,15 +11,13 @@ from PyQt5 import QtCore
 from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 
-from Easyload import *
-
 class MOOC_Downloading(QMainWindow):
     def __init__(self):
         super().__init__()
         self.refSettings()
         self.settings['mob_token'] = ''
         self.initUI()
-         
+        
     def initUI(self):
         #任务栏
         self.statusBar()
@@ -692,7 +686,10 @@ class AboutDialog(QDialog):
         self.setWindowTitle("关于")      # 窗口标题
         self.setGeometry(400,400,300,200)   # 窗口位置与大小
 
-        self.versionLbl = QLabel('版本号：{}'.format('.'.join(list(map(lambda x:str(x),version)))))
+        try:
+            self.versionLbl = QLabel('版本号：{}'.format('.'.join(list(map(lambda x:str(x),version)))))
+        except Exception as e:
+            print(e)
         self.selectNewVer = QPushButton('检查更新')
         self.newVerInfoLbl = QLabel('当前版本已为最新版本！')
         
