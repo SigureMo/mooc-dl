@@ -1,7 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.abspath('..'))
+from MOOC_Downloading import VERSION as version
+
 import requests
 import json
 import re
-import os
 import random
 import time
 import hashlib
@@ -18,7 +22,6 @@ from tools.network_file import Networkfile
 from tools.config import Config
 from tools.multithreading import ThreadPool
 
-version = (1, 7, 5)
 #logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(level = logging.INFO)
@@ -331,11 +334,11 @@ def login(ignore=False):
             flag=hashlib.md5()
             flag.update(password.encode('utf-8'))
             passwd=flag.hexdigest()
-            #############Sharing###############
+            # 共享账号
             if username=='sharing':
                 username='s_sharing@126.com'
                 passwd='e10adc3949ba59abbe56e057f20f883e'
-            ################################
+            # END
             k=gettoken(username,passwd)
             if k[1]==0:
                 print('登陆成功！')
@@ -575,6 +578,35 @@ def getcoursewares(courseinfo,root,mob_token,sharpness,infoQ = ''):
         chapternum+=1
     return coursewares
 
+def getProcessNum(config):
+    if config.get('process_num'):
+        try:
+            if 3<=eval(config.process_num)<=10:
+                process_num=eval(config.process_num)
+            else:
+                process_num=5
+        except:
+            process_num=5
+    else:
+        process_num=5
+    config.process_num=str(process_num)
+    config.save()
+    return process_num
+
+def getVersion(repName):
+    response = requests.get('https://github.com/SigureMo/{}/blob/master/__init__.py'.format(repName))
+    soup=BeautifulSoup(response.text,'html.parser')
+    td = soup.find('td', id = 'LC1')
+    s = ''
+    for child in td.children:
+        s += child.string
+    version = eval(s.replace('VERSION', '').replace('=', ''))
+    return version
+
+def getNewFile(repName):
+    r = requests.get('https://github.com/SigureMo/{}/archive/master.zip'.format(repName))
+    with open('{}.zip'.format(repName), 'wb') as f:
+        f.write(r.content)
 
 if __name__=='__main__':
     def isignore(config,attr):
@@ -592,10 +624,28 @@ if __name__=='__main__':
     config=Config('data/config.txt','$')
     ignoreconfig=Config('data/IgnoreOptions.txt',' is ignore? ')
 
-    mob_token=login(isignore(ignoreconfig,'login'))   #登录
-    root=getroot(isignore(ignoreconfig,'root'))       #设置下载路径
+    # 版本检测
+    flag = True
+    try:
+        print('当前版本号：{}'.format('.'.join(list(map(lambda x:str(x),version)))))
+        gitVersion = getVersion('MOOC_Downloading')
+        if gitVersion > version:
+            k = input('检测到新版本：{}，是否更新[y/n]'.format('.'.join(list(map(lambda x:str(x),gitVersion)))))
+            if k[0] in 'Yy':
+                print('正在下载，请稍后...')
+                getNewFile('MOOC_Downloading')
+                print('已下载完成，请自行解压覆盖主程序文件（除data）后重新启动程序')
+                flag = False
+        else:
+            print('无可用更新')
+    except:
+        print('版本检测发生异常，正在跳过...')
+
+    if flag:
+        mob_token=login(isignore(ignoreconfig,'login'))   #登录
+        root=getroot(isignore(ignoreconfig,'root'))       #设置下载路径
     
-    while True:
+    while flag:
         while True:
             cid=input('课程号课程号！')
             try:
@@ -637,35 +687,25 @@ if __name__=='__main__':
         config.save()
         general_view(courseinfo,root)                                         #课程概览
         playlist(coursename,coursewares,root, config.get('playListMode'))     #播放列表
-        #########################processes##########################
-        #import mul_process_package         #for_多进程打包
-        #multiprocessing.freeze_support()  #for_多进程打包
-        if config.get('process_num'):
-            try:
-                if 3<=eval(config.process_num)<=10:
-                    process_num=eval(config.process_num)
-                else:
-                    process_num=5
-            except:
-                process_num=5
-        else:
-            process_num=5
-        config.process_num=str(process_num)
-        config.save()
-        # pool=Pool(process_num)                     #同时启动的进程数
+        process_num = getProcessNum(config)                                   #进程数
+        # 多进程
+        # import mul_process_package
+        # multiprocessing.freeze_support()
+        # pool=Pool(process_num)
         # for courseware in coursewares:
         #     pool.apply_async(courseware.download, args=(weeknum,loadtype))
         # pool.close()
         # pool.join()
+        # 多线程
         pool = ThreadPool(process_num)
         for courseware in coursewares:
             pool.addTask(courseware.download, args=(weeknum,loadtype))
         pool.run()
         pool.join()
-        ##########################单进程#################################
+        # 单进程
         # for courseware in coursewares:
         #     courseware.download(weeknum,loadtype)
-        ##########################check#################################
+        # 校验
         for courseware in coursewares:
             if  courseware.path and not os.path.exists(courseware.path):
                 print('噫，{}刚才下载失败啦，我再试试，稍等下哈'.format(courseware.name))
