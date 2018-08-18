@@ -1,7 +1,3 @@
-import sys
-import os
-sys.path.append(os.path.abspath('..'))
-from MOOC_Downloading import VERSION as version
 from Easyload import *
 
 from PyQt5.QtWidgets import *
