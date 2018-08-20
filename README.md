@@ -67,5 +67,8 @@
 1. 微信群`Python爱生活`各位小伙伴的支持（帮忙宣传一波，关注公众号`Python爱生活`，输入`我要入群`便可扫码入群）
 2. 热心网友H发现新‘类型’：字幕，并对播放列表格式提出建议
 
+## 推荐
+[Course Crawler(forked from Foair/course-crawler)](https://github.com/SigureMo/course-crawler)
+
 ## 关于
-`Sigure_Mo` Python新手，于中国大学MOOC下嵩天老师的`Python语言程序设计`自学Python，从Python开始逐渐接触各方面计算机知识，从此一发不可收，正在逐渐向计算机专业方向转型，如有问题，欢迎加[Q](tencent://AddContact/?fromId=45&fromSubId=1&subcmd=all&uin=2537625460&website=www.oicqzone.com)讨论
+`Sigure_Mo` Python新手
