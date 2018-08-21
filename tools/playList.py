@@ -11,6 +11,6 @@ for dirpath, dirnames, filenames in os.walk(root):
                 path = path.replace(root + os.sep, '')
             s += path
 with open(root+os.sep+'Playlist.m3u','w',encoding='utf-8') as f:
-    f.write(s)
+    f.write(s.replace('\\', '/'))
 input('已成功生成播放列表')
         
