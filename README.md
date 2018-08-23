@@ -1,4 +1,10 @@
 # MOOC_Downloading
+## Menu
+1. [Instructions](#使用说明)
+2. [Announcements](#注意事项)
+3. [References](#参考链接)
+4. [Develop](#开发相关)
+5. [](#)
 ## 使用说明：
 ### 免责声明：
 本程序提供一键下载中国大学MOOC全课件功能，仅供学习使用，版权归中国大学MOOC所有，不用于任何商业用途。
@@ -39,11 +45,15 @@
 3. [Python GUI之tkinter 实战（二）tkinter+多线程](https://blog.csdn.net/yingshukun/article/details/78838395)
 4. [用PyQt5写的第一个程序](https://www.cnblogs.com/archisama/p/5444032.html)
 
-## 开发及测试环境：
+## 开发相关：
+### 状态：
+Bug修补，暂停新内容开发，GUI暂时搁置
+
+### 测试环境：
 1. Windows10 Python3.6
 2. Deepin15.6 Python3.5
 
-## 安装依赖：
+### 安装依赖：
 1. requests
 > `pip install requests`
 2. bs4
@@ -53,8 +63,17 @@
 * 若linux下直接安装失败，请使用 `sudo python3 -m pip install <moduleName>`
 * 若因为安装速度过慢而安装失败，请加参数`-i https://pypi.tuna.tsinghua.edu.cn/simple/`
 
-## 开发状态：
-Bug修补，暂停新内容开发，GUI暂时搁置
+### 实现过程
+1. 使用fiddler对手机抓包
+  * 点击课程可抓到courseInfo及其获取方法
+  * 中国大学MOOC APP 下载视频以获取videoUrl与对应解析方法
+  * 中国大学MOOC APP 下载文档以获取pdfUrl与对应解析方法
+2. 使用fiddler对Chrome抓包
+  * 点击富文本下的下载附件以获取附件url
+3. 确实没啥，取了点巧，手机抓包，导致后来的扩展难以摆脱最初的思路，扩展部分暂时不考虑，可以使用[推荐](#推荐)内容下的项目下载其他来源的视频
+
+### 许可协议
+`MIT`
 
 ## 最新版本：
 ### 版本号：1.7
@@ -69,16 +88,6 @@ Bug修补，暂停新内容开发，GUI暂时搁置
 8. 增加版本自动检测机制，通过GitHub仓库对版本进行检测，并询问是否下载
 9. 增加`HISTORY.md`,`.gitignore`
 > +更多参见[HISTORY.md](HISTORY.md)
-
-## 实现过程
-1. 使用fiddler对手机抓包
-  * 点击课程可抓到courseInfo及其获取方法
-  * 中国大学MOOC APP 下载视频以获取videoUrl与对应解析方法
-  * 中国大学MOOC APP 下载文档以获取pdfUrl与对应解析方法
-2. 使用fiddler对Chrome抓包
-  * 点击富文本下的下载附件以获取附件url
-3. 确实没啥，取了点巧，手机抓包，导致后来的扩展难以摆脱最初的思路，扩展部分暂时不考虑，可以使用[推荐](#推荐)内容下的项目下载其他来源的视频
-
 
 ## 特别鸣谢
 1. 微信群`Python爱生活`各位小伙伴的支持（帮忙宣传一波，关注公众号`Python爱生活`，输入`我要入群`便可扫码入群）
