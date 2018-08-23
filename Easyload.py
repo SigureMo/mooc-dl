@@ -594,13 +594,16 @@ def getProcessNum(config):
     return process_num
 
 def getVersion(repName):
-    response = requests.get('https://github.com/SigureMo/{}/blob/master/__init__.py'.format(repName))
-    soup=BeautifulSoup(response.text,'html.parser')
-    td = soup.find('td', id = 'LC1')
-    s = ''
-    for child in td.children:
-        s += child.string
-    version = eval(s.replace('VERSION', '').replace('=', ''))
+    try:
+        response = requests.get('https://github.com/SigureMo/{}/blob/master/__init__.py'.format(repName))
+        soup=BeautifulSoup(response.text,'html.parser')
+        td = soup.find('td', id = 'LC1')
+        s = ''
+        for child in td.children:
+            s += child.string
+        version = eval(s.replace('VERSION', '').replace('=', ''))
+    except:
+        version = (0, 0, 0)
     return version
 
 def getNewFile(repName):
