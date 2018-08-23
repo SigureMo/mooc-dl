@@ -68,7 +68,7 @@ Bug修补，暂停新内容开发，GUI暂时搁置
 7. 增加`__init__.py`，封装为package，并将`MOOC_Downloading.py`更名为`GUI.py`
 8. 增加版本自动检测机制，通过GitHub仓库对版本进行检测，并询问是否下载
 9. 增加`HISTORY.md`,`.gitignore`
-> +更多参见`HISTORY.md`
+> +更多参见[HISTORY.md](blob/master/HISTORY.md)
 
 ## 实现过程
 1. 使用fiddler对手机抓包
@@ -89,3 +89,5 @@ Bug修补，暂停新内容开发，GUI暂时搁置
 
 ## 关于
 `Sigure_Mo` Python新手
+
+[return 0](#MOOC_Downloading)
