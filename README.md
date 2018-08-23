@@ -4,7 +4,11 @@
 2. [Announcements](#注意事项)
 3. [References](#参考链接)
 4. [Develop](#开发相关)
-5. [](#)
+5. [Latest version](#最新版本)
+6. [Acknowledgements](#特别鸣谢)
+7. [Recommend](#推荐)
+8. [About](#关于)
+
 ## 使用说明：
 ### 免责声明：
 本程序提供一键下载中国大学MOOC全课件功能，仅供学习使用，版权归中国大学MOOC所有，不用于任何商业用途。
