@@ -1,9 +1,11 @@
-import requests
+# -*- coding: utf-8 -*-
+"""网易公开课"""
+
 import time
 import xml.dom.minidom
+import requests
 
 from bs4 import BeautifulSoup
-from xml.dom.minidom import parse
 
 try:
     from Crypto.Cipher import AES # 把site-package下的crypto改为Crypto就好
@@ -22,6 +24,32 @@ def open_decrypt(hex_string, t):
     CRYKey = {1: b"4fxGZqoGmesXqg2o", 2: b"3fxVNqoPmesAqg2o"}
     aes = AES.new(CRYKey[t], AES.MODE_ECB)
     return str(aes.decrypt(bytes.fromhex(hex_string)),encoding='gbk',errors="ignore").replace('\x08','').replace('\x06', '')
+
+def get_courses(url):
+    """
+    Input：
+        url ：String：课程主网页url
+    Output：
+        List：[(视频网页url, 视频名), ...]
+    """
+    
+    res = requests.get(url)
+    soup=BeautifulSoup(res.text,'html.parser')
+    listrow = soup.find('div', class_='listrow')
+    links = []
+
+    names = soup.find('p', class_='bread')
+    organization = names.find_all('a', class_='f-c9')[0].string.strip()
+    course = names.find_all('a', class_='f-c9')[1].string.strip()
+    print(organization,course)
+    for item in listrow.find_all('div',class_='item'):
+        p = item.find('p', class_='f-thide')
+        if p.find('a'):
+            a = p.find('a')
+            links.append((a.get('href'), a.string))
+        else:
+            links.append((url, p.string.split(']')[-1]))
+    return links
 
 def get_courses(url):
     """
@@ -141,6 +169,9 @@ def download(url):
 url = 'http://open.163.com/special/opencourse/cs50.html'
 url = 'http://open.163.com/special/lectureroncomputerscience/'
 url = 'http://open.163.com/special/opencourse/closereadingcooperative.html'
+url = 'http://open.163.com/special/cuvocw/chuantongzhengzhi.html'
+url = 'http://open.163.com/special/Khan/trigonometry.html'
+#url = 'http://open.163.com/movie/2016/1/3/3/MBBL91A3O_MBBL9CG33.html'
 download(url)
 #videourl = 'http://live.ws.126.net/movie/U/R/2_M6U6LS8CV_M6U6MHDUR.xml'
 #url = 'http://open.163.com/movie/2010/3/U/R/M6U6LS8CV_M6U6MHDUR.html'
