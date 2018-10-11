@@ -1,4 +1,4 @@
-import requests,json,re,os,random,time
+import requests,json,re,os,random,time,hashlib
 
 from multiprocessing import Pool
 import multiprocessing
@@ -30,6 +30,9 @@ def getchapters():
           'mob-token':m}
     url='https://www.icourse163.org/mob/course/courseLearn/v1'
     r=requests.post(url,data=data,timeout=30).content
+    # print(json.loads(r))#Debugging
+    # with open('test.json','wb') as f:
+    # 	f.write(r)
     return json.loads(r).get('results').get('termDto').get('chapters')#.keys()
     
 def tree():
@@ -39,6 +42,7 @@ def tree():
         for part in chapter.get('lessons'):
             lessons=[]
             for lesson in part.get('units'):
+                # print(lesson)#Debugging
                 lessons.append([chapter.get('name'),\
                                 part.get('name'),\
                                 lesson.get('name'),\
@@ -67,7 +71,7 @@ def load_urls(week,tp='all',sharpness='sd'):
                             urls.append(j[:-1]+[j[6].get('videoHDUrl')])
                         else:
                             urls.append(j[:-1]+[j[6].get('sdMp4Url')])
-                elif j[5]==4 or j[2]==5:#文本和随堂测验
+                elif j[5]==4 or j[5]==5 or j[5]==6:#文本、随堂测验、讨论
                     continue
                 elif j[5]==3:
                     if tp in ['all','pdf']:#pdf
@@ -198,12 +202,19 @@ def gettogen(username,passwd):
         return [None,\
                 j.get("status").get("code")]
 
+
+'''
+'videoHDUrl'高清
+'videoSHDUrl'超高清flv
+'sdMp4Url'标清
+'''
+
 if __name__=='__main__':
-    '''print('登录：（当前仅支持爱课程账号，且密码为加密后的，需要自行抓包获取）')'''
+    print('登录：（当前仅支持爱课程账号）')
     #################login###################
     from config import Config
     config=Config('config.txt')
-    '''flag=0
+    flag=0
     if config.get('username') and config.get('passwd') and \
        gettogen(config.username,config.passwd)[1]==0:
         k=input('已检测到您上次使用账号：{}，是否继续使用该账号？[y/n]'.format(config.username))
@@ -215,12 +226,15 @@ if __name__=='__main__':
     if not flag:
         while True:
             username=input('请输入账号：')
-            passwd=input('请输入密码：')
-            #############Test###############
-            if username=='test':
-                username='240377379@qq.com'
-                passwd=' '
+            password=input('请输入密码：')
+            #############Sharing###############
+            if username=='sharing':
+                username='s_sharing@126.com'
+                password='123456'
             ################################
+            flag=hashlib.md5()
+            flag.update(password.encode('utf-8'))
+            passwd=flag.hexdigest()
             k=gettogen(username,passwd)
             if k[1]==0:
                 print('登陆成功！')
@@ -232,9 +246,8 @@ if __name__=='__main__':
                 print('发生未知错误！')
     config.username=username
     config.passwd=passwd
-    config.save()'''
+    config.save()
     ########################################
-    m=gettogen('240377379@qq.com',' ')[0]
     ##################path0#################
     config=Config('config.txt')
     flag=0
@@ -257,10 +270,6 @@ if __name__=='__main__':
     while True:
         while True:
             lid=input('课程号课程号！')
-            #############Test###############
-            if lid=='test':
-                lid='1001541001'
-            ################################
             if getname(lid):
                 print('课程名是 {} 吧？'.format(getname(lid)))
                 k=input('我找的对不对对不对！[y/n]')
@@ -317,7 +326,7 @@ if __name__=='__main__':
             coursewares.append(Courseware(url,glo))
         for i in['-','\\','|','/']*5:
             time.sleep(0.2)
-            print('\r开始启动下载进程，请小等片刻喔'+i,end='')
+            print('\r下载进程召唤术'+i,end='')
         print()
         #########################概览################################
         if not os.path.exists(path0+os.sep+rename(getname(lid))):
@@ -354,9 +363,8 @@ if __name__=='__main__':
         pool.close()
         pool.join()
         # ##########################单进程#################################
-        # for url in urls:
-        #     glo=[lid,m,path0]
-        #     download(url,glo)
+        # for courseware in coursewares:
+        #     download(courseware,glo)
         ##########################check#################################
         for courseware in coursewares:
             if not os.path.exists(courseware.name):
@@ -369,7 +377,26 @@ if __name__=='__main__':
     input('Press <Enter>')
 
 
-
-
-
+# path0='D:\\MOOC'
+# lid='1001542001'
+# username='s_sharing@126.com'
+# password='123456'
+# flag=hashlib.md5()
+# flag.update(password.encode('utf-8'))
+# passwd=flag.hexdigest()
+# k=gettogen(username,passwd)
+# m=k[0]
+# print('获取链接中，很快就好哒！')
+# w=[]
+# for i in tree():
+#     w.append(i[0])
+#     print(i[0])
+# urls=load_urls(list(range(1,len(w)+1)),'pdf','sd')
+# coursewares=[]
+# glo=[lid,m,path0,getname(lid)]
+# for url in urls:
+#     coursewares.append(Courseware(url,glo))
+# for courseware in coursewares:
+#     download(courseware,glo)
+# input('Press <Enter>')
 
