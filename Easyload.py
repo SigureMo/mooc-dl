@@ -1,19 +1,40 @@
+import sys
+import os
+sys.path.append(os.path.abspath('..'))
+from MOOC_Downloading import VERSION as version
+
 import requests
 import json
 import re
-import os
 import random
 import time
 import hashlib
 import platform
-import multiprocessing
+import queue
+import logging
+# import multiprocessing
 
 from bs4 import BeautifulSoup
-from multiprocessing import Pool
+# from multiprocessing import Pool
+# from multiprocessing.dummy import Pool as ThreadPool
 
-from siguretools.network_file import Networkfile
-from siguretools.config import Config
+from tools.network_file import Networkfile
+from tools.config import Config
+from tools.multithreading import ThreadPool
 
+#logging.basicConfig(level = logging.INFO,format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(level = logging.INFO)
+handler = logging.FileHandler(time.strftime('logs/'+'%Y%m%d%H%M', time.localtime(time.time()))+'.log')
+handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+
+logger.addHandler(handler)
+logger.addHandler(console)
 
 def getterminfos(cid):
     response=requests.get('https://www.icourse163.org/course/DUT-{}#/info'.format(cid))
@@ -74,12 +95,16 @@ def gettoken(username,passwd):
     elif j.get("status").get("code")==100:
         return [None,\
                 j.get("status").get("code")]
+    else:
+        return [None,\
+                j.get("status").get("code")]
 
 class Courseware():
-    def __init__(self,courseinfo,chapternum,lessonnum,unitnum,root,mob_token,sharpness):
+    def __init__(self,courseinfo,chapternum,lessonnum,unitnum,root,mob_token,sharpness,infoQ):
+        self.infoQ = infoQ
         courseDto=courseinfo.get('results').get('courseDto')
         cid=courseDto.get('id')
-        coursename=courseDto.get('name')
+        self.coursename=courseDto.get('name')
         tid=courseDto.get('currentTermId')
         shdict1={'sd':'.mp4','hd':'.mp4','shd':'.flv'}
         shdict2={'sd':'sdMp4Url','hd':'videoHDUrl','shd':'videoSHDUrl'}
@@ -102,7 +127,7 @@ class Courseware():
         self.lesson=self.chapter.get('lessons')[lessonnum]
         self.unit=self.lesson.get('units')[unitnum]
 
-        self.coursedir=root+os.sep+rename(coursename)
+        self.coursedir=root+os.sep+rename(self.coursename)
         self.chaptername=rename(self.chapter.get('name'))
         self.chapterdir=self.coursedir+os.sep+self.chaptername
         self.lessonname=rename(self.lesson.get('name'))
@@ -113,6 +138,7 @@ class Courseware():
 
         if self.contentType==1:#视频
             self.resourceInfo=self.unit.get('resourceInfo')
+            self.contentId=self.unit.get('contentId')
             if self.resourceInfo.get(shdict2[sharpness]):
                 self.extension=shdict1[sharpness]
                 self.vurl=self.resourceInfo.get(shdict2[sharpness])
@@ -122,6 +148,12 @@ class Courseware():
             else:
                 self.extension='.mp4'
                 self.vurl=self.resourceInfo.get('sdMp4Url')
+            self.srtKeys = self.resourceInfo.get('srtKeys')
+            if self.srtKeys:
+                self.srtDict = {
+                    0: 'zh-cn',
+                    1: 'en',
+                    }
             self.path=self.lessondir+os.sep+self.unitname+self.extension
             self.name=self.unitname+self.extension
             self.size0=95*1024*1024#预设值
@@ -158,9 +190,6 @@ class Courseware():
             self.path=''
             self.name=self.unitname+self.extension
  
-
-
-
     def download(self,weeknum,loadtype):
         if self.chapternum in weeknum and self.contentType in loadtype and self.path:
             if not os.path.exists(self.chapterdir):
@@ -171,33 +200,57 @@ class Courseware():
                 for i in range(3):
                     try:
                         if self.contentType==1:
-                            f=self.getvideo()
+                            p = self.getvideo()
+                            if self.srtKeys:
+                                self.getSrts()
                         elif self.contentType==3:
-                            f=self.getpdf()
+                            p = self.getpdf()
                         elif self.contentType==4:
-                            f=self.getenclosure()
+                            p = self.getenclosure()
+                        self.f = Networkfile(*p)
                         break
                     except:
                         if i<2:
-                            print('[Loading]{}资源请求失败！正在重试'.format(self.name))
+                            self.print('[Loading]{}资源请求失败！正在重试'.format(self.name))
                         else:
-                            print('[Error]{}资源请求失败！请稍后重试！'.format(self.name))
+                            self.print('[Error]{}资源请求失败！请稍后重试！'.format(self.name))
 
-            
-                if f.local_size<f.size:
-                    print('[Loading]开始下载{}'.format(self.name))
+                if self.f.local_size<self.f.size:
+                    self.print('[Loading]开始下载{}'.format(self.name))
                     try:
-                        f.download()
-                        if f.local_size>=f.size:
-                            print('[Success]{}下载成功！'.format(self.name))
+                        self.f.download()
+                        if self.f.local_size>=self.f.size:
+                            self.print('[Success]{}下载成功！'.format(self.name))
                         else:
-                            print('[Error]{}文件不完整！')
-                    except:
-                        print('[Info]{}下载失败！'.format(self.name))
+                            for i in range(3):
+                                if i < 2:
+                                    self.print('[Error]{}文件不完整！正在重试……'.format(self.name))
+                                    os.remove(self.path)
+                                    self.f.download()
+                                else:
+                                    self.print('[Error]{}文件不完整！请自行核实文件完整性……'.format(self.name))
+                    except (SystemExit, KeyboardInterrupt):
+                        raise
+                    except Exception:
+                        self.print('[Info]{}下载失败！'.format(self.name))
+                        logger.error("Faild to open sklearn.txt from logger.error",exc_info = True)
                 else:
-                    print('[Info]文件{}已存在2'.format(self.name))
+                    self.print('[Info]文件{}已存在2'.format(self.name))
             else:
-                print('[Info]文件{}已存在1'.format(self.name))
+                self.print('[Info]文件{}已存在1'.format(self.name))
+
+    def getCourseJSON(self, jsonData):
+        try:
+            if self.contentType==1:
+                p = self.getvideo()
+            elif self.contentType==3:
+                p = self.getpdf()
+            elif self.contentType==4:
+                p = self.getenclosure()
+        except:
+            p = (None, self.path)
+        jsonData.append(list(p))
+        return jsonData
 
     def getvideo(self):
         headers={'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 7.0; SM-G9300 Build/NRD90M)',\
@@ -210,8 +263,28 @@ class Courseware():
         headers={'User-Agent': 'AndroidDownloadManager'}
         params={'key':k,\
                 'Xtask':str(self.cid)+'_'+str(self.tid)+'_'+str(self.unitid)}
-        return Networkfile(self.vurl,self.path,params)
+        return self.vurl, self.path, params
 
+    def getSrts(self):
+        self.srtPaths = []
+        headers = {
+            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 8.0.0; SM-G9300 Build/R16NW)',
+            }
+        data = {
+            't': 1,
+            'mob-token': self.mob_token,
+            'unitId': self.unitid,
+            'cid': self.contentId,
+            }
+        response = requests.post('https://www.icourse163.org/mob/course/learn/v1',data = data)
+        for srtKey in response.json()['results']['learnInfo']['srtKeys']:
+            path = self.lessondir + os.sep + self.unitname + \
+                   '[' + self.srtDict.get(srtKey['lang'], '未知语言') + ']' + '.srt'
+            url = srtKey['nosUrl']
+            self.srtPaths.append(path)
+            with open(path, 'wb') as f:
+                f.write(requests.get(url).content)
+        
     def getpdf(self):
         url='http://www.icourse163.org/mob/course/learn/v1'
         data={'t':3,\
@@ -220,15 +293,21 @@ class Courseware():
               'mob-token': self.mob_token}
         r=requests.post(url,data=data).content
         pdf=json.loads(r.decode('utf8')).get("results").get('learnInfo').get("textOrigUrl")    
-        return Networkfile(pdf,self.path)
+        return pdf, self.path
 
     def getenclosure(self):
         url='http://www.icourse163.org/mob/course/attachment.htm'
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'}
         params=self.jsonContent
-        return Networkfile(url,self.path,params)
+        return url, self.path, params
 
-
+    def print(self, string):
+        if self.infoQ:
+            self.infoQ.put(string)
+        else:
+            logger.info(string)
+            #print(string)
+        
 #用户界面：（命令行）
 def login(ignore=False):
     loginflag=not ignore
@@ -255,11 +334,11 @@ def login(ignore=False):
             flag=hashlib.md5()
             flag.update(password.encode('utf-8'))
             passwd=flag.hexdigest()
-            #############Sharing###############
+            # 共享账号
             if username=='sharing':
                 username='s_sharing@126.com'
                 passwd='e10adc3949ba59abbe56e057f20f883e'
-            ################################
+            # END
             k=gettoken(username,passwd)
             if k[1]==0:
                 print('登陆成功！')
@@ -440,7 +519,7 @@ def general_view(courseinfo,root):
             6:'讨论',#讨论
             }
     with open(root+os.sep+rename(coursename)+os.sep+\
-        'General_View.txt','w',encoding='utf-8') as f:
+        'General_View.txt','w',encoding='utf-8', newline='\r\n') as f:
         s='{}_课程概览'.format(rename(coursename)).center(60,'=')+'\n'
         for chapter in chapters:
             s+='{}\n'.format(chapter.get('name'))
@@ -451,16 +530,31 @@ def general_view(courseinfo,root):
                             +unit.get('name').replace('\n',''))
         f.write(s)
 
-def playlist(coursename,coursewares,root):
+def playlist(coursename,coursewares,root, mode='RP'):
     with open(root+os.sep+rename(coursename)+os.sep+\
         'Playlist.m3u','w',encoding='utf-8') as f:
         s=''
         for courseware in coursewares:
             if courseware.contentType==1:
-                s+='{}/{}/{}\n'.format(courseware.chaptername,courseware.lessonname,courseware.name)
+                if mode == 'AP':
+                    s+='{}\n'.format(courseware.path.replace(r'\\', '\\'))                               #绝对路径
+                else:
+                    s+='{}/{}/{}\n'.format(courseware.chaptername,courseware.lessonname,courseware.name) #相对路径
         f.write(s)
+    if os.path.exists(root+os.sep+rename(coursename)+os.sep+'Playlist.dpl'):
+        os.remove(root+os.sep+rename(coursename)+os.sep+'Playlist.dpl')
+    # with open(root+os.sep+rename(coursename)+os.sep+\
+    #    'Playlist.dpl','w',encoding='utf-8') as f:
+    #    s='DAUMPLAYLIST\n'
+    #    num = 1
+    #     for courseware in coursewares:
+    #         if courseware.contentType==1:
+    #             s+='{}*file*{}\n'.format(num, courseware.path.replace(r'\\', '\\'))
+    #             #s+='{}*file*{}\\{}\\{}\n'.format(num,courseware.chaptername,courseware.lessonname,courseware.name)
+    #             num += 1
+    #     f.write(s)
 
-def getcoursewares(courseinfo,root,mob_token,sharpness):
+def getcoursewares(courseinfo,root,mob_token,sharpness,infoQ = ''):
     chapters=courseinfo.get('results').get('termDto').get('chapters')
     coursewares=[]
     chapternum=0 
@@ -477,12 +571,45 @@ def getcoursewares(courseinfo,root,mob_token,sharpness):
                         root,\
                         mob_token,\
                         sharpness,\
+                        infoQ,
                         ))
                 unitnum+=1
             lessonnum+=1
         chapternum+=1
     return coursewares
 
+def getProcessNum(config):
+    if config.get('process_num'):
+        try:
+            if 3<=eval(config.process_num)<=10:
+                process_num=eval(config.process_num)
+            else:
+                process_num=5
+        except:
+            process_num=5
+    else:
+        process_num=5
+    config.process_num=str(process_num)
+    config.save()
+    return process_num
+
+def getVersion(repName):
+    try:
+        response = requests.get('https://github.com/SigureMo/{}/blob/master/__init__.py'.format(repName))
+        soup=BeautifulSoup(response.text,'html.parser')
+        td = soup.find('td', id = 'LC1')
+        s = ''
+        for child in td.children:
+            s += child.string
+        version = eval(s.replace('VERSION', '').replace('=', ''))
+    except:
+        version = (0, 0, 0)
+    return version
+
+def getNewFile(repName):
+    r = requests.get('https://github.com/SigureMo/{}/archive/master.zip'.format(repName))
+    with open('{}.zip'.format(repName), 'wb') as f:
+        f.write(r.content)
 
 if __name__=='__main__':
     def isignore(config,attr):
@@ -500,10 +627,28 @@ if __name__=='__main__':
     config=Config('data/config.txt','$')
     ignoreconfig=Config('data/IgnoreOptions.txt',' is ignore? ')
 
-    mob_token=login(isignore(ignoreconfig,'login'))   #登录
-    root=getroot(isignore(ignoreconfig,'root'))       #设置下载路径
+    # 版本检测
+    flag = True
+    try:
+        print('当前版本号：{}'.format('.'.join(list(map(lambda x:str(x),version)))))
+        gitVersion = getVersion('MOOC_Downloading')
+        if gitVersion > version:
+            k = input('检测到新版本：{}，是否更新[y/n]'.format('.'.join(list(map(lambda x:str(x),gitVersion)))))
+            if k[0] in 'Yy':
+                print('正在下载，请稍后...')
+                getNewFile('MOOC_Downloading')
+                print('已下载完成，请自行解压覆盖主程序文件（除data）后重新启动程序')
+                flag = False
+        else:
+            print('无可用更新')
+    except:
+        print('版本检测发生异常，正在跳过...')
+
+    if flag:
+        mob_token=login(isignore(ignoreconfig,'login'))   #登录
+        root=getroot(isignore(ignoreconfig,'root'))       #设置下载路径
     
-    while True:
+    while flag:
         while True:
             cid=input('课程号课程号！')
             try:
@@ -539,32 +684,31 @@ if __name__=='__main__':
             time.sleep(0.2)
             print('\r下载进程召唤术'+i,end='')
         print()
-        general_view(courseinfo,root)             #课程概览
-        playlist(coursename,coursewares,root)     #播放列表
-        #########################processes##########################
-        import mul_process_package         #for_多进程打包
-        multiprocessing.freeze_support()  #for_多进程打包
-        if config.get('process_num'):
-            try:
-                if 3<=eval(config.process_num)<=10:
-                    process_num=eval(config.process_num)
-                else:
-                    process_num=5
-            except:
-                process_num=5
-        else:
-            process_num=5
-        config.process_num=str(process_num)
+        
+        if not config.get('playListMode'):
+            config.playListMode = 'AP'
         config.save()
-        pool=Pool(process_num)                     #同时启动的进程数
+        general_view(courseinfo,root)                                         #课程概览
+        playlist(coursename,coursewares,root, config.get('playListMode'))     #播放列表
+        process_num = getProcessNum(config)                                   #进程数
+        # 多进程
+        # import mul_process_package
+        # multiprocessing.freeze_support()
+        # pool=Pool(process_num)
+        # for courseware in coursewares:
+        #     pool.apply_async(courseware.download, args=(weeknum,loadtype))
+        # pool.close()
+        # pool.join()
+        # 多线程
+        pool = ThreadPool(process_num)
         for courseware in coursewares:
-            pool.apply_async(courseware.download, args=(weeknum,loadtype))
-        pool.close()
+            pool.addTask(courseware.download, args=(weeknum,loadtype))
+        pool.run()
         pool.join()
-        ##########################单进程#################################
+        # 单进程
         # for courseware in coursewares:
         #     courseware.download(weeknum,loadtype)
-        ##########################check#################################
+        # 校验
         for courseware in coursewares:
             if  courseware.path and not os.path.exists(courseware.path):
                 print('噫，{}刚才下载失败啦，我再试试，稍等下哈'.format(courseware.name))
