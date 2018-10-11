@@ -3,6 +3,8 @@ import requests,json,re,os,random,time,hashlib
 from multiprocessing import Pool
 import multiprocessing
 
+from network_file import Networkfile
+
 
 def gettid(cid):
     url='https://www.icourse163.org/learn/DUT-'+cid
@@ -94,12 +96,14 @@ class Courseware():
                 self.vurl=self.resourceInfo.get('sdMp4Url')
             self.path=self.lessondir+os.sep+self.unitname+self.extension
             self.name=self.unitname+self.extension
+            self.size0=50*1024*1024#预设值
 
         elif self.contentType==3:#文档
             self.extension='.pdf'
             self.contentId=self.unit.get('contentId')
             self.path=self.lessondir+os.sep+self.unitname+self.extension
             self.name=self.unitname+self.extension
+            self.size0=3*1024*1024#预设值
 
         elif self.contentType==4:#富文本
             if self.unit.get('jsonContent'):
@@ -112,6 +116,7 @@ class Courseware():
                 self.jsonContent={}
                 self.path=''
                 self.name=self.unitname
+            self.size0=3*1024*1024#预设值
 
         elif self.contentType not in [1,3,4,5,6]:
             self.extension=''
@@ -134,38 +139,37 @@ class Courseware():
                 os.mkdir(self.chapterdir)
             if not os.path.exists(self.lessondir):
                 os.mkdir(self.lessondir)
-
-            if not os.path.exists(self.path):
-                print('[Loading]开始下载{}'.format(self.name))
+            if not os.path.exists(self.path) or os.path.getsize(self.path)<self.size0:
                 for i in range(3):
                     try:
                         if self.contentType==1:
-                            r=self.getvideo()
+                            f=self.getvideo()
                         elif self.contentType==3:
-                            r=self.getpdf()
+                            f=self.getpdf()
                         elif self.contentType==4:
-                                r=self.getenclosure()
+                            f=self.getenclosure()
                         break
                     except:
                         if i<2:
                             print('[Loading]{}资源请求失败！正在重试'.format(self.name))
                         else:
                             print('[Error]{}资源请求失败！请稍后重试！'.format(self.name))
-                try:
-                    with open(self.path,'wb') as f:
-                        f.write(r)
-                    print('[Success]{}下载成功！'.format(self.name))
-                except:
-                    print('[Info]{}下载失败！正在尝试重新命名……'.format(repr(self.name)))
-                    tempname='Courseware'+str(random.randint(0,9999))+self.extension
+
+            
+                if f.local_size<f.size:
+                    print('[Loading]开始下载{}'.format(self.name))
                     try:
-                        with open(self.lessondir+os.sep+tempname,'wb') as f:
-                            f.write(r)
-                        print('[Success]原：{} 更名为：{} 后下载成功！'.format(repr(self.name),tempname))
+                        f.download()
+                        if f.local_size>=f.size:
+                            print('[Success]{}下载成功！'.format(self.name))
+                        else:
+                            print('[Error]{}文件不完整！')
                     except:
-                        print('[Error]{}文件保存失败！请联系开发人员！'.format(self.name))
+                        print('[Info]{}下载失败！'.format(self.name))
+                else:
+                    print('[Info]文件{}已存在2'.format(self.name))
             else:
-                print('[Info]文件{}已存在'.format(self.name))
+                print('[Info]文件{}已存在1'.format(self.name))
 
     def getvideo(self):
         headers={'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 7.0; SM-G9300 Build/NRD90M)',\
@@ -178,7 +182,7 @@ class Courseware():
         headers={'User-Agent': 'AndroidDownloadManager'}
         params={'key':k,\
                 'Xtask':str(self.cid)+'_'+str(self.tid)+'_'+str(self.unitid)}
-        return requests.get(self.vurl,params=params,headers=headers).content
+        return Networkfile(self.vurl,self.path,params)
 
     def getpdf(self):
         url='http://www.icourse163.org/mob/course/learn/v1'
@@ -188,13 +192,13 @@ class Courseware():
               'mob-token': self.mob_token}
         r=requests.post(url,data=data).content
         pdf=json.loads(r.decode('utf8')).get("results").get('learnInfo').get("textOrigUrl")    
-        return requests.get(pdf).content
+        return Networkfile(pdf,self.path)
 
     def getenclosure(self):
         url='http://www.icourse163.org/mob/course/attachment.htm'
         headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'}
         params=self.jsonContent
-        return requests.get(url,headers=headers,params=params).content
+        return Networkfile(url,self.path,params)
 
 
 
@@ -465,7 +469,7 @@ if __name__=='__main__':
 
 
 
-# input('balab')
+# input('blabla')
 
 
 
