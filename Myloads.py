@@ -1,5 +1,4 @@
 from Easyload import *
-from siguretools.config import Config
 if __name__=='__main__':
     def isignore(config,attr):
         try:
@@ -16,6 +15,11 @@ if __name__=='__main__':
     config=Config('data/config.txt','$')
     ignoreconfig=Config('data/IgnoreOptions.txt',' is ignore? ')
 
+    if getVersion('MOOC_Downloading') > version:
+        print('发现新版本，下载中...')
+        getNewFile('MOOC_Downloading')
+        print('下载成功，请稍后自行解压')
+
     mob_token=gettoken(config.username,config.passwd)[0]
     root=config.get(platform.system()+'Root')
     #####################################
@@ -25,9 +29,12 @@ if __name__=='__main__':
 
         '1002644012',#计算机网络
         '1002784135',#计算机操作系统
-        '1003013004',#数据结构
+        '1002654021',#数据结构
         '1002791028',#计算机组成原理（上）
         '1002790026',#计算机组成原理（下）
+
+        '1002774001',#程序设计入门——C语言
+        '1002775002',#C语言程序设计进阶
 
         '1002777001',#零基础学Java语言
         '1002776001',#面向对象程序设计——Java语言
@@ -67,32 +74,31 @@ if __name__=='__main__':
         print('获取链接中，很快就好哒！')
         coursewares=getcoursewares(courseinfo,root,mob_token,sharpness)
         print('下载进程召唤术...')
-        general_view(courseinfo,root)        #课程概览
-        playlist(coursename,coursewares,root)#播放列表
-        #########################processes##########################
-        import mul_process_package         #for_多进程打包
-        multiprocessing.freeze_support()  #for_多进程打包
-        if config.get('process_num'):
-            try:
-                if 3<=eval(config.process_num)<=10:
-                    process_num=eval(config.process_num)
-                else:
-                    process_num=5
-            except:
-                process_num=5
-        else:
-            process_num=5
-        config.process_num=str(process_num)
+        
+        if not config.get('playListMode'):
+            config.playListMode = 'RP'
         config.save()
-        pool=Pool(process_num)                     #同时启动的进程数
+        general_view(courseinfo,root)                                         #课程概览
+        playlist(coursename,coursewares,root,config.get('playListMode'))      #播放列表
+        process_num = getProcessNum(config)                                   #进程数
+        # 多进程
+        # import mul_process_package
+        # multiprocessing.freeze_support()
+        # pool=Pool(process_num)
+        # for courseware in coursewares:
+        #     pool.apply_async(courseware.download, args=(weeknum,loadtype))
+        # pool.close()
+        # pool.join()
+        # 多线程
+        pool = ThreadPool(process_num)
         for courseware in coursewares:
-            pool.apply_async(courseware.download, args=(weeknum,loadtype))
-        pool.close()
+            pool.addTask(courseware.download, args=(weeknum,loadtype))
+        pool.run()
         pool.join()
-        ##########################单进程#################################
+        # 单进程
         # for courseware in coursewares:
         #     courseware.download(weeknum,loadtype)
-        ##########################check#################################
+        # 校验
         for courseware in coursewares:
             if  courseware.path and not os.path.exists(courseware.path):
                 print('噫，{}刚才下载失败啦，我再试试，稍等下哈'.format(courseware.name))

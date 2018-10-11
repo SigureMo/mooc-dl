@@ -1,6 +1,6 @@
-login is ignore? False
 root is ignore? False
-weeknum is ignore? False
-loadtype is ignore? 
-sharpness is ignore? 
 termnum is ignore? False
+sharpness is ignore? False
+login is ignore? False
+weeknum is ignore? False
+loadtype is ignore? False
