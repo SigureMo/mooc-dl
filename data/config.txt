@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 username$s_sharing@126.com
 WindowsRoot$D:\\MOOC
 loadtype$all
@@ -7,3 +8,15 @@ weeknum$all
 sharpness$shd
 process_num$10
 passwd$e10adc3949ba59abbe56e057f20f883e
+=======
+passwd$e10adc3949ba59abbe56e057f20f883e
+termnum$0
+sharpness$shd
+loadtype$all
+WindowsRoot$D:\\MOOC
+weeknum$all
+LinuxRoot$/media/xxjmiao/DATA/MOOC
+username$s_sharing@126.com
+process_num$10
+playListMode$RP
+>>>>>>> history
