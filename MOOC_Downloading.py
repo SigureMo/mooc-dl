@@ -1,4 +1,4 @@
-import requests,json,re,os,random
+import requests,json,re,os,random,time
 
 from multiprocessing import Pool
 import multiprocessing
@@ -57,9 +57,15 @@ def load_urls(week,tp='all',sharpness='sd'):
         w=tree()[wk-1]
         for i in w[1]:
             for j in i[1]:
+                #print(j)#Debugging
                 if j[5]==1:
                     if tp in ['all','video']:#视频
-                        urls.append(j[:-1]+[j[6].get(shdict[sharpness])])
+                        if j[6].get(shdict[sharpness]):
+                            urls.append(j[:-1]+[j[6].get(shdict[sharpness])])
+                        elif j[6].get('videoHDUrl'):
+                            urls.append(j[:-1]+[j[6].get('videoHDUrl')])
+                        else:
+                            urls.append(j[:-1]+[j[6].get('sdMp4Url')])
                 elif j[5]==4 or j[2]==5:#文本和随堂测验
                     continue
                 elif j[5]==3:
@@ -67,17 +73,33 @@ def load_urls(week,tp='all',sharpness='sd'):
                         urls.append(j[:-1]+[''])
     return urls
 
+def rename(name):
+    return name\
+           .replace('\\','')\
+           .replace('/','')\
+           .replace(':','')\
+           .replace('*','')\
+           .replace('?','')\
+           .replace('"','')\
+           .replace('<','')\
+           .replace('>','')\
+           .replace('|','')
+
+class Courseware():
+    def __init__(self,url,glo,n):
+        lid=glo[0]
+        m=glo[1]
+        path0=glo[2]
+        self.root=path0
+        self.coursename=path0+os.sep+rename(getname(lid))
+        self.weekname=self.coursename+os.sep+rename(url[0])
+        self.partname=self.weekname+os.sep+rename(url[1])
+        self.name=self.partname+os.sep+rename(url[2])+n
+
 def download(url,glo):
     lid=glo[0]
     m=glo[1]
     path0=glo[2]
-    if not os.path.exists(path0+os.sep+getname(lid)):
-        os.mkdir(path0+os.sep+getname(lid))
-    if not os.path.exists(path0+os.sep+getname(lid)+os.sep+url[0]):
-        os.mkdir(path0+os.sep+getname(lid)+os.sep+url[0])
-    if not os.path.exists(path0+os.sep+getname(lid)+os.sep+url[0]+os.sep+url[1]):
-        os.mkdir(path0+os.sep+getname(lid)+os.sep+url[0]+os.sep+url[1])
-            
     if url[5]==3:
         n='.pdf'
     elif url[5]==1:
@@ -85,28 +107,35 @@ def download(url,glo):
             n='.flv'
         else:
             n='.mp4'
-    if not os.path.exists(os.sep.join([path0]+[getname(lid)]+url[0:3])+n):
-        print('开始下载'+url[2]+n)
+    courseware=Courseware(url,glo,n)
+    if not os.path.exists(courseware.weekname):
+        os.mkdir(courseware.weekname)
+    if not os.path.exists(courseware.partname):
+        os.mkdir(courseware.partname)
+
+    
+    if not os.path.exists(courseware.name):
+        print('---开始下载{}---'.format(url[2]+n))
         try:
             r=(getpdf(url,glo) if url[5]==3 else getvideo(url,glo))
             try:
-                with open(os.sep.join([path0]+[getname(lid)]+url[0:3])+n,'wb') as f:
+                with open(courseware.name,'wb') as f:
                     f.write(r)
                 print('***{}下载成功！***'.format(url[2]+n))
             except:
-                print('{}下载失败！正在尝试重新命名……'.format(url[2]+n))
+                print('___{}下载失败！正在尝试重新命名……___'.format(url[2]+n))
                 tempname='Courseware'+str(random.randint(0,9999))
                 try:
-                    with open(os.sep.join([path0]+[getname(lid)]+url[0:2]+[tempname])+n,'wb') as f:
+                    with open(courseware.name,'wb') as f:
                         f.write(r)
-                    print('原：{} 更名为：{} 后下载成功！请自行重命名……'.format(url[2]+n,tempname+n))
+                    print('***原：{} 更名为：{} 后下载成功！***'.format(url[2]+n,tempname+n))
                 except:
-                    print('！！！{}下载失败！请手动下载！'.format(os.sep.join([getname(lid)]+url[0:3])+n))
+                    print('!!!{}文件下载失败！请手动下载！!!!'.format(os.sep.join([getname(lid)]+url[0:3])+n))
         except:
-            print('！！！{}请求失败！请手动下载！'.format(os.sep.join([getname(lid)]+url[0:3])+n))
+            print('!!!{}资源请求失败！请手动下载！!!!'.format(os.sep.join([getname(lid)]+url[0:3])+n))
             
     else:
-        print('文件{}已存在'.format(url[2]+n))
+        print('___文件{}已存在___'.format(url[2]+n))
 
 
 def getpdf(purl,glo):
@@ -156,6 +185,7 @@ def gettogen(username,passwd):
     elif j.get("status").get("code")==100:
         return [None,\
                 j.get("status").get("code")]
+
 '''
 'videoHDUrl'高清
 'videoSHDUrl'超高清flv
@@ -183,7 +213,7 @@ if __name__=='__main__':
             #############Test###############
             if username=='test':
                 username='240377379@qq.com'
-                passwd='77*****85f3*************df5****'
+                passwd=' '
             ################################
             k=gettogen(username,passwd)
             if k[1]==0:
@@ -198,7 +228,7 @@ if __name__=='__main__':
     config.passwd=passwd
     config.save()'''
     ########################################
-    m=gettogen('240377379@qq.com','77***38685***d125b***80c***50***')[0]#for Easyload
+    m=gettogen('240377379@qq.com',' ')[0]
     ##################path0#################
     config=Config('config.txt')
     flag=0
@@ -274,23 +304,56 @@ if __name__=='__main__':
                 else:
                     print('输入错误！')
         urls=load_urls(week,tp,sharpness)
-        
+        for i in['-','\\','|','/']*5:
+            time.sleep(0.2)
+            print('\r正在启动下载进程，请稍候'+i,end='')
+        print()
+        #########################概览################################
+        if not os.path.exists(path0+os.sep+rename(getname(lid))):
+            os.mkdir(path0+os.sep+getname(lid))
+        with open(path0+os.sep+getname(lid)+os.sep+\
+                                 'general_view.txt','w',encoding='utf-8') as f:
+            s='{}_课程概览\n'.format(getname(lid))
+            for i in tree():
+                s+='  {}\n'.format(i[0])
+                for j in i[1]:
+                    s+='    {}\n'.format(j[0])
+                    for k in j[1]:
+                        s+='      {}\n'.format(k[2])
+            f.write(s)
+        #########################processes##########################
         #import mul_process_package         #for_多进程打包
         #multiprocessing.freeze_support()  #for_多进程打包
-        pool=Pool(5)                     #同时启动的进程数
+        if config.get('process_num'):
+            try:
+                if 3<=eval(config.process_num)<=10:
+                    process_num=eval(config.process_num)
+                else:
+                    process_num=5
+            except:
+                process_num=5
+        else:
+            process_num=5
+        config.process_num=str(process_num)
+        config.save()
+        pool=Pool(process_num)                     #同时启动的进程数
         for url in urls:
             glo=[lid,m,path0]
             pool.apply_async(download, args=(url,glo))
         #pool.map(download,urls)
         pool.close()
         pool.join()
-        '''for url in urls:
-            download(url)'''
+        # ##########################单进程#################################
+        # for url in urls:
+        #     glo=[lid,m,path0]
+        #     download(url,glo)
         print('已全部下载完成！')
         ct=input('是否继续下载？[y/n]')
         if ct and ct[0] in 'Nn':
             break
     input('Press <Enter>')
+
+    
 
 
 
