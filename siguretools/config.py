@@ -28,20 +28,28 @@ class Config():
             for item in cfg:#保存所有属性，包括新添加的
                 f.write(self._sep.join(item)+'\n')
 
-    def get(self,attr):
+    def get(self,attr,default=None):
         if hasattr(self,attr):
             return vars(self)[attr]
         else:
-            return None
+            return default
 
-'''
-config=Config('config.txt')
-config.path=1234
-print(config.get('path'))
-config.save()
-'''
+    def set(self,attr,value):
+        vars(self)[attr]=value
+
+if __name__=='__main__':
+    config=Config('config.txt')#初始化配置文件
+    config.path=os.path.expanduser("~")+os.sep+'Desktop'\
+                 +os.sep+'test'#设置属性
+    print(config.get('path','Please setting a path!'))#获取属性值
+    config.save()#保存
+    config=Config('config.txt')#再次读取配置文件
+    del config.path#删除属性值
+    config.save()#重新保存
+
 '''
 获取属性时请尽量使用get方法，不然如果没有该属性容易报错
 尽量保存为str格式，就算是数字也尽量如此
-可通过Config('xxx.ini','mysep')自定义分隔符
+可通过Config('config','mysep')自定义分隔符
+可使用del将属性值删除
 '''
