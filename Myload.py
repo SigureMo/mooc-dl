@@ -1,40 +1,54 @@
 from Easyload import *
+from siguretools.config import Config
 if __name__=='__main__':
-    #################login###################
-    from config import Config
-    config=Config('config.txt','$')
-    mob_token=gettogen(config.username,config.passwd)[0]
-    ##################root#################
-    root=config.root
+    def isignore(config,attr):
+        try:
+            if eval(config.get(attr))==True:
+                return True
+            else:
+                config.set(attr,'False')
+                return False
+        except:
+            config.set(attr,'False')
+            return False
+        finally:
+            config.save()
+    config=Config('data/config.txt','$')
+    ignoreconfig=Config('data/IgnoreOptions.txt',' is ignore? ')
+
+    mob_token=gettoken(config.username,config.passwd)[0]
+    root=config.get(platform.system()+'Root')
     #####################################
-    cids=[
-        '1001944005',#材科基
-        '1001734003',#物化2
-        '1001734002',#物化1
-        '268001',#python
-        '1001542001',#java1
-        '1001527001',#组原下
-        '1001871001',#python数据可视化
-        '93001',#数据结构
-        '1002536002',#tensorflow
-        '1001870001',#python spider
-        '1002253024',#web
-        '154005',#computer network
-        '309001',#组原上
-        '1001571004',#computer OS
-        '1001541001',#java0
+    tids=[
+        '1002700003',#人工智能实践：Tensorflow笔记
+        '1002788142',#Web信息系统应用开发
+
+        '1002644012',#计算机网络
+        '1002784135',#计算机操作系统
+        '1003013004',#数据结构
+        '1002791028',#计算机组成原理（上）
+        '1002790026',#计算机组成原理（下）
+
+        '1002777001',#零基础学Java语言
+        '1002776001',#面向对象程序设计——Java语言
+
+        '1002788003',#Python语言程序设计
+        '1002781006',#Python网络爬虫与信息提取
+        '1002856007',#Python科学计算三维可视化
+        '1001963002',#Python云端系统开发入门(old)
+        '1001965001',#Python机器学习应用(old)
+        '1001966001',#Python游戏开发入门(old)
+        '1002239009',#Python数据分析与展示(old)
         ]
-    for cid in cids:
+    for tid in tids:
         flag=0
         while not flag:
             try:
-                courseinfo=get_courseinfo(cid,mob_token)
+                courseinfo=get_courseinfo(tid,mob_token)
                 results=courseinfo.get('results')
                 courseDto=results.get('courseDto')#课程信息
                 cid=courseDto.get('id')#1001542001
                 coursename=courseDto.get('name')#"面向对象程序设计——Java语言"
-                schoolName=courseDto.get('schoolName')#"浙江大学"
-                tid=courseDto.get('currentTermId')#1002776001
                 print('开始下载订阅课程 {} '.format(coursename))
                 flag=1
 
@@ -44,58 +58,17 @@ if __name__=='__main__':
             
         chapters=courseinfo.get('results').get('termDto').get('chapters')
 
-        weeknum=list(range(len(chapters)))
+        weeknum=list(range(len(chapters)))###全部课程###
 
-        loadtype=[1,3,4]
+        loadtype=[1,3,4]###全部类型###
 
-        sharpness='shd'
+        sharpness='shd'###超清画质###
 
         print('获取链接中，很快就好哒！')
-        # chapters=courseinfo.get('results').get('termDto').get('chapters')
-        coursewares=[]
-        chapternum=0 
-        for chapter in chapters:
-            lessonnum=0
-            for lesson in chapter.get('lessons'):
-                unitnum=0
-                for unit in lesson.get('units'):
-                    coursewares.append(Courseware(\
-                            courseinfo,\
-                            chapternum,\
-                            lessonnum,\
-                            unitnum,\
-                            root,\
-                            mob_token,\
-                            sharpness,\
-                            ))
-                    unitnum+=1
-                lessonnum+=1
-            chapternum+=1
-        for i in['-','\\','|','/']*5:
-            time.sleep(0.2)
-            print('\r下载进程召唤术'+i,end='')
-        print()
-        #########################概览################################
-        if not os.path.exists(root+os.sep+rename(coursename)):
-            os.mkdir(root+os.sep+rename(coursename))
-        tpdict={1:'视频',
-                # 2:'',#暂未知
-                3:'文档',#文档
-                4:'富文本',#富文本
-                5:'测验',#随堂测验
-                6:'讨论',#讨论
-                }
-        with open(root+os.sep+rename(coursename)+os.sep+\
-            'General_View.txt','w',encoding='utf-8') as f:
-            s='{}_课程概览'.format(rename(coursename)).center(60,'=')+'\n'
-            for chapter in chapters:
-                s+='{}\n'.format(chapter.get('name'))
-                for lesson in chapter.get('lessons'):
-                    s+='      {}\n'.format(lesson.get('name'))
-                    for unit in lesson.get('units'):
-                        s+='            {}\n'.format('['+tpdict.get(unit.get('contentType'),'未知')+']'\
-                        	+unit.get('name'))
-            f.write(s)
+        coursewares=getcoursewares(courseinfo,root,mob_token,sharpness)
+        print('下载进程召唤术...')
+        general_view(courseinfo,root)        #课程概览
+        playlist(coursename,coursewares,root)#播放列表
         #########################processes##########################
         import mul_process_package         #for_多进程打包
         multiprocessing.freeze_support()  #for_多进程打包

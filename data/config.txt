@@ -1,0 +1,9 @@
+username$s_sharing@126.com
+passwd$e10adc3949ba59abbe56e057f20f883e
+process_num$10
+WindowsRoot$D:\\MOOC
+LinuxRoot$/media/xxjmiao/DATA/MOOC
+termnum$0
+weeknum$all
+loadtype$all
+sharpness$shd
