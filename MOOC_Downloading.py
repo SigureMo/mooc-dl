@@ -53,8 +53,9 @@ def tree():
 def load_urls(week,tp='all',sharpness='sd'):
     urls=[]
     shdict={'sd':'sdMp4Url','hd':'videoHDUrl','shd':'videoSHDUrl'}
+    tr=tree()
     for wk in week:
-        w=tree()[wk-1]
+        w=tr[wk-1]
         for i in w[1]:
             for j in i[1]:
                 #print(j)#Debugging
@@ -75,6 +76,9 @@ def load_urls(week,tp='all',sharpness='sd'):
 
 def rename(name):
     return name\
+           .replace('\n','')\
+           .replace('\r','')\
+           .replace('\b','')\
            .replace('\\','')\
            .replace('/','')\
            .replace(':','')\
@@ -86,56 +90,64 @@ def rename(name):
            .replace('|','')
 
 class Courseware():
-    def __init__(self,url,glo,n):
+    def __init__(self,url,glo):
         lid=glo[0]
         m=glo[1]
         path0=glo[2]
+        coursename=glo[3]
+        if url[5]==3:
+            n='.pdf'
+        elif url[5]==1:
+            if '.flv' in url[-1]:
+                n='.flv'
+            else:
+                n='.mp4'
+        self.url=url
         self.root=path0
-        self.coursename=path0+os.sep+rename(getname(lid))
+        self.coursename=path0+os.sep+rename(coursename)
         self.weekname=self.coursename+os.sep+rename(url[0])
         self.partname=self.weekname+os.sep+rename(url[1])
         self.name=self.partname+os.sep+rename(url[2])+n
+        self.type=url[5]
+        self.n=n
 
-def download(url,glo):
+def download(courseware,glo):
     lid=glo[0]
     m=glo[1]
     path0=glo[2]
-    if url[5]==3:
-        n='.pdf'
-    elif url[5]==1:
-        if '.flv' in url[-1]:
-            n='.flv'
-        else:
-            n='.mp4'
-    courseware=Courseware(url,glo,n)
+    n=courseware.n
+    url=courseware.url
     if not os.path.exists(courseware.weekname):
         os.mkdir(courseware.weekname)
     if not os.path.exists(courseware.partname):
         os.mkdir(courseware.partname)
 
-    
     if not os.path.exists(courseware.name):
-        print('---开始下载{}---'.format(url[2]+n))
-        try:
-            r=(getpdf(url,glo) if url[5]==3 else getvideo(url,glo))
+        print('[Loading]开始下载{}'.format(url[2]+n))
+        for i in range(3):
             try:
-                with open(courseware.name,'wb') as f:
-                    f.write(r)
-                print('***{}下载成功！***'.format(url[2]+n))
+                r=(getpdf(url,glo) if courseware.type==3 else getvideo(url,glo))
+                break
             except:
-                print('___{}下载失败！正在尝试重新命名……___'.format(url[2]+n))
-                tempname='Courseware'+str(random.randint(0,9999))
-                try:
-                    with open(courseware.name,'wb') as f:
-                        f.write(r)
-                    print('***原：{} 更名为：{} 后下载成功！***'.format(url[2]+n,tempname+n))
-                except:
-                    print('!!!{}文件下载失败！请手动下载！!!!'.format(os.sep.join([getname(lid)]+url[0:3])+n))
+                if i<2:
+                    print('[Loading]{}资源请求失败！正在重试'.format(url[2]+n))
+                else:
+                    print('[Error]{}资源请求失败！请稍后重试！'.format(os.sep.join([getname(lid)]+url[0:3])+n))
+        try:
+            with open(courseware.name,'wb') as f:
+                f.write(r)
+            print('[Success]{}下载成功！'.format(url[2]+n))
         except:
-            print('!!!{}资源请求失败！请手动下载！!!!'.format(os.sep.join([getname(lid)]+url[0:3])+n))
-            
+            print('[Info]{}下载失败！正在尝试重新命名……'.format(repr(url[2])+n))
+            tempname='Courseware'+str(random.randint(0,9999))
+            try:
+                with open(tempname,'wb') as f:
+                    f.write(r)
+                print('[Success]原：{} 更名为：{} 后下载成功！'.format(repr(url[2]+n),tempname+n))
+            except:
+                print('[Error]{}文件保存失败！请联系开发人员！'.format(os.sep.join([getname(lid)]+url[0:3])+n))
     else:
-        print('___文件{}已存在___'.format(url[2]+n))
+        print('[Info]文件{}已存在'.format(url[2]+n))
 
 
 def getpdf(purl,glo):
@@ -186,12 +198,6 @@ def gettogen(username,passwd):
         return [None,\
                 j.get("status").get("code")]
 
-'''
-'videoHDUrl'高清
-'videoSHDUrl'超高清flv
-'sdMp4Url'标清
-'''
-
 if __name__=='__main__':
     '''print('登录：（当前仅支持爱课程账号，且密码为加密后的，需要自行抓包获取）')'''
     #################login###################
@@ -233,43 +239,43 @@ if __name__=='__main__':
     config=Config('config.txt')
     flag=0
     if config.get('path0') and os.path.exists(config.path0):
-        k=input('已检测到您曾使用过路径：{}，是否继续使用该路径？[y/n]'.format(config.path0))
+        k=input('您上次把课件存到了：{}，要不要继续使用这个路径呀？[y/n]'.format(config.path0))
         if k[0] in 'Yy':
             flag=1
             path0=config.path0
     if not flag:
         while True:
-            path0=input('请设置存储路径：')
+            path0=input('想存到哪里呢？：')
             if os.path.exists(path0):
-                print('设置成功')
+                print('嗯嗯，我记住啦')
                 break
             else:
-                print('路径不存在')
+                print('这个路径不存在呀！')
     config.path0=path0
     config.save()
     #####################################
     while True:
         while True:
-            lid=input('请输入课程号：')
+            lid=input('课程号课程号！')
             #############Test###############
             if lid=='test':
                 lid='1001541001'
             ################################
             if getname(lid):
-                print('课程名为：'+getname(lid))
-                k=input('请核实课程号是否正确[y/n]')
+                print('课程名是 {} 吧？'.format(getname(lid)))
+                k=input('我找的对不对对不对！[y/n]')
                 if k and k[0] in 'Yy':
                     break
             else:
-                print('课程不存在！')
+                print('噫，我没找到这个课程！')
             
         w=[]
         for i in tree():
             w.append(i[0])
             print(i[0])
         while True:
-            k=input('请选择周次（也可按照"起始-结束"这样的格式输入，0为全部下载）')
-            if k=='0':
+            k=input('您想下载哪几周的呀？（单个数字 or 起-止 or 0和all）')
+            if k=='0' or k=='all':
                 week=list(range(1,len(w)+1))
                 break
             elif re.search(r'\d+-\d+',k):
@@ -278,48 +284,53 @@ if __name__=='__main__':
                     week=list(range(eval(se[0]),eval(se[1])+1))
                     break
                 else:
-                    print('请输入课程范围内的数字')
+                    print('这个数字不在范围内呀')
             elif re.match(r'\d+$',k):
                 if 0<eval(k)<=len(w):
                     week=[eval(k)]
                     break
                 else:
-                    print('请输入课程范围内的数字')
+                    print('这个数字不在范围内呀')
             else:
-                print('输入错误！')
+                print('输错啦！')
         while True:
-            k=input('请选择需要下载的课件("video","pdf","all")')
+            k=input('您想下载哪种课件呐？("video","pdf","all")')
             if k in ["video","pdf","all"]:
                 tp=k
                 break
             else:
-                print('输入错误！')
+                print('不对不对，这个我不认识！')
         sharpness='sd'
         if tp in ["video","all"]:
             while True:
-                k=input('请选择视频清晰度(标清"sd",高清"hd",超高清"shd")')
+                k=input('选个清晰度吧(标清"sd",高清"hd",超高清"shd")')
                 if k in ['sd','hd','shd']:
                     sharpness=k
                     break
                 else:
-                    print('输入错误！')
+                    print('输错啦！')
+        print('获取链接中，很快就好哒！')
         urls=load_urls(week,tp,sharpness)
+        coursewares=[]
+        glo=[lid,m,path0,getname(lid)]
+        for url in urls:
+            coursewares.append(Courseware(url,glo))
         for i in['-','\\','|','/']*5:
             time.sleep(0.2)
-            print('\r正在启动下载进程，请稍候'+i,end='')
+            print('\r开始启动下载进程，请小等片刻喔'+i,end='')
         print()
         #########################概览################################
         if not os.path.exists(path0+os.sep+rename(getname(lid))):
             os.mkdir(path0+os.sep+getname(lid))
         with open(path0+os.sep+getname(lid)+os.sep+\
-                                 'general_view.txt','w',encoding='utf-8') as f:
-            s='{}_课程概览\n'.format(getname(lid))
+                                 'General_View.txt','w',encoding='utf-8') as f:
+            s='{}_课程概览'.format(getname(lid)).center(60,'=')+'\n'
             for i in tree():
-                s+='  {}\n'.format(i[0])
+                s+='{}\n'.format(i[0])
                 for j in i[1]:
-                    s+='    {}\n'.format(j[0])
+                    s+='\t{}\n'.format(j[0])
                     for k in j[1]:
-                        s+='      {}\n'.format(k[2])
+                        s+='\t\t{}\n'.format(k[2])
             f.write(s)
         #########################processes##########################
         #import mul_process_package         #for_多进程打包
@@ -337,9 +348,8 @@ if __name__=='__main__':
         config.process_num=str(process_num)
         config.save()
         pool=Pool(process_num)                     #同时启动的进程数
-        for url in urls:
-            glo=[lid,m,path0]
-            pool.apply_async(download, args=(url,glo))
+        for courseware in coursewares:
+            pool.apply_async(download, args=(courseware,glo))
         #pool.map(download,urls)
         pool.close()
         pool.join()
@@ -347,13 +357,17 @@ if __name__=='__main__':
         # for url in urls:
         #     glo=[lid,m,path0]
         #     download(url,glo)
-        print('已全部下载完成！')
-        ct=input('是否继续下载？[y/n]')
+        ##########################check#################################
+        for courseware in coursewares:
+            if not os.path.exists(courseware.name):
+                print('噫，{}刚才下载失败啦，我再试试，稍等下哈'.format(courseware.name))
+                download(courseware,glo)
+        print('哇，全都下完啦！快点去看吧！')
+        ct=input('对了，要不要下载其他课程呐？[y/n]')
         if ct and ct[0] in 'Nn':
             break
     input('Press <Enter>')
 
-    
 
 
 
