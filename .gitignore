@@ -107,5 +107,5 @@ venv.bak/
 .txt
 .json
 
-# logs
-.log
+# course dir
+* - *
