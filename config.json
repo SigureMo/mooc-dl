@@ -2,5 +2,6 @@
   "username": "s_sharing@126.com",
   "password": "123456",
   "resolution": 0,
-  "root": ""
+  "root": "",
+  "thread_num": 5
 }

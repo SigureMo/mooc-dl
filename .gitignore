@@ -104,7 +104,6 @@ venv.bak/
 .mypy_cache/
 
 # config
-.txt
 .json
 
 # course dir

@@ -10,18 +10,19 @@ class ExecuteError(Exception):
 class Task():
     """任务对象"""
 
-    def __init__(self, func, args=()):
+    def __init__(self, func, args=(), kw={}):
         """接受函数与参数以初始化对象"""
 
         self.func = func
         self.args = args
+        self.kw = kw
 
     def run(self):
         """执行函数
         同步函数直接执行并返回结果，异步函数返回该函数
         """
 
-        result = self.func(*self.args)
+        result = self.func(*self.args, **self.kw)
         return result
 
     async def execute(self):
