@@ -125,7 +125,7 @@ def parse_resource(resource, token):
             'mob-token': token
         }
         res = spider.post(api_url, data = data)
-        pdf_url = res.json()["results"]["learnInfo"]["textOrigUrl"]    
+        pdf_url = res.json()["results"]["learnInfo"]["textOrigUrl"]
         return pdf_url, file_path, None
 
     elif resource[0] == RICH_TEXT:
@@ -196,7 +196,7 @@ def get_resource(term_id, token):
                             file_path,
                             json_content
                         )
-    
+
     return resource_list
 
 def get_section_num(courseware_num, level=3):
@@ -208,6 +208,7 @@ root = CONFIG["root"]
 url = sys.argv[1]
 
 token = login(CONFIG["username"], CONFIG["password"])
+thread_num = CONFIG["thread_num"]
 term_id, course_name = get_summary(url)
 base_dir = touch_dir(os.path.join(root, course_name))
 course_id = re.match(r"https://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
@@ -217,7 +218,18 @@ print(course_name)
 print(course_id)
 resource_list = get_resource(term_id, token)
 
-for resource in resource_list:
-    url, file_path, params = parse_resource(resource, token)
-    print(resource[1])
-    spider.download_bin(url, file_path, params=params)
+if thread_num > 1:
+    pool = ThreadPool(thread_num)
+    for resource in resource_list:
+        url, file_path, params = parse_resource(resource, token)
+        task = Task(spider.download_bin, args=(url, file_path), kw={'params': params})
+        pool.add_task(task)
+    pool.run()
+    pool.join()
+else:
+    for resource in resource_list:
+        url, file_path, params = parse_resource(resource, token)
+        print(resource[1])
+        spider.download_bin(url, file_path, params=params)
+
+print("Done!")
