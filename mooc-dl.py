@@ -203,6 +203,19 @@ def get_section_num(courseware_num, level=3):
     return "_".join(list((map(lambda x: str(x), courseware_num[: level]))))
 
 
+def download_resource(resource, token):
+    url, file_path, params = parse_resource(resource, token)
+    if os.path.exists(file_path):
+        print("{} is exist".format(file_path))
+    else:
+        print(resource[1])
+        tmp_path = file_path + ".downloading"
+        spider.download_bin(url, tmp_path, params=params)
+        with open(tmp_path, "rb") as fr:
+            with open(file_path, "wb") as fw:
+                fw.write(fr.read())
+        os.remove(tmp_path)
+
 root = CONFIG["root"]
 # url = 'https://www.icourse163.org/course/ZJU-93001?tid=1003997005'
 url = sys.argv[1]
@@ -221,15 +234,12 @@ resource_list = get_resource(term_id, token)
 if thread_num > 1:
     pool = ThreadPool(thread_num)
     for resource in resource_list:
-        url, file_path, params = parse_resource(resource, token)
-        task = Task(spider.download_bin, args=(url, file_path), kw={'params': params})
+        task = Task(download_resource, args=(resource, token))
         pool.add_task(task)
     pool.run()
     pool.join()
 else:
     for resource in resource_list:
-        url, file_path, params = parse_resource(resource, token)
-        print(resource[1])
-        spider.download_bin(url, file_path, params=params)
+        download_resource(resource, token)
 
 print("Done!")
