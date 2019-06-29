@@ -1,3 +1,4 @@
+import os
 import re
 import requests
 
@@ -14,7 +15,8 @@ class Crawler(requests.Session):
 
     def download_bin(self, url, file_name, **kw):
         """下载二进制文件"""
-
+        if os.path.exists(file_name):
+            return
         if kw.pop('stream', True):
             chunk_size = kw.pop('chunk_size', 1024)
             res = self.get(url, stream=True, **kw)
@@ -31,7 +33,8 @@ class Crawler(requests.Session):
 
     def download_text(self, url, file_name, **kw):
         """下载文本，以 UTF-8 编码保存文件"""
-
+        if os.path.exists(file_name):
+            return
         res = self.get(url, **kw)
         res.encoding = res.apparent_encoding
         with open(file_name, 'w', encoding='utf_8') as f:
