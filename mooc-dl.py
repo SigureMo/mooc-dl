@@ -3,14 +3,17 @@ import hashlib
 import re
 import os
 import sys
+import time
 
+from urllib.parse import urlencode
 from bs4 import BeautifulSoup
 
 from utils.crawler import Crawler
 from utils.config import Config
 from utils.thread import ThreadPool
-from utils.common import Task, repair_filename, touch_dir
+from utils.common import Task, repair_filename, touch_dir, size_format
 from utils.playlist import Dpl
+from utils.segment_dl import NetworkFile
 
 spider = Crawler()
 VIDEO, PDF, RICH_TEXT = 1, 3, 4
@@ -96,15 +99,10 @@ def parse_resource(resource, token):
                 spider.download_bin(srt_url, srt_path)
 
         # VIDEO
-        headers = {
-            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 7.0; SM-G9300 Build/NRD90M)',
-            'mob-token': token
-            }
         api_url = 'http://www.icourse163.org/mob/course/getVideoAuthorityToken/v1'
         res = spider.post(api_url, headers=headers)
         video_key = res.json().get("results").get("videoKey")
 
-        headers = {'User-Agent': 'AndroidDownloadManager'}
         data = {
             'key': video_key,
             'Xtask': "{}_{}_{}".format(course_id, term_id, unit_id)
@@ -144,9 +142,9 @@ def get_resource(term_id, token):
                 courseware_num = (chapter_num+1, lesson_num+1, unit_num+1)
                 file_path = os.path.join(
                     base_dir,
-                    get_section_num(courseware_num, level=1) + repair_filename(chapter["name"]),
-                    get_section_num(courseware_num, level=2) + repair_filename(lesson["name"]),
-                    get_section_num(courseware_num, level=3) + repair_filename(unit["name"])
+                    get_section_num(courseware_num, level=1) + " " + repair_filename(chapter["name"]),
+                    get_section_num(courseware_num, level=2) + " " + repair_filename(lesson["name"]),
+                    get_section_num(courseware_num, level=3) + " " + repair_filename(unit["name"])
                 )
                 touch_dir(os.path.dirname(file_path))
 
@@ -184,9 +182,9 @@ def get_resource(term_id, token):
                         json_content = eval(unit['jsonContent'])
                         file_path = os.path.join(
                             base_dir,
-                            get_section_num(courseware_num, level=1) + repair_filename(chapter["name"]),
-                            get_section_num(courseware_num, level=2) + repair_filename(lesson["name"]),
-                            get_section_num(courseware_num, level=3) + repair_filename(json_content["fileName"])
+                            get_section_num(courseware_num, level=1) + " " + repair_filename(chapter["name"]),
+                            get_section_num(courseware_num, level=2) + " " + repair_filename(lesson["name"]),
+                            get_section_num(courseware_num, level=3) + " " + repair_filename(json_content["fileName"])
                         )
                         resource_list.append(
                             RICH_TEXT,
@@ -197,46 +195,99 @@ def get_resource(term_id, token):
     return resource_list
 
 def get_section_num(courseware_num, level=3):
-    return "_".join(list((map(lambda x: str(x), courseware_num[: level]))))
+    """ 根据等级获取课件的标号 """
+    return ".".join(list((map(lambda x: str(x), courseware_num[: level]))))
 
+def manager(files):
+    """ 监控器 """
+    size, t = sum([file.size for file in files]), time.time()
+    total_size = sum([file.total for file in files])
+    while True:
+        bar_length = 50
+        max_length = 80
+        print(" Downloading... ".center(max_length, "="))
+        # 单个下载进度
+        for file in files:
+            if file.downloading:
+                if file.total:
+                    print("{} {}/{}".format(file.name, size_format(file.size),
+                                            size_format(file.total)))
+                else:
+                    print("{} {}".format(file.name, size_format(file.size)))
 
-def download_resource(resource, token):
-    url, file_path, params = parse_resource(resource, token)
-    if os.path.exists(file_path):
-        print("{} is exist".format(file_path))
-    else:
-        print(file_path)
-        tmp_path = file_path + ".downloading"
-        spider.download_bin(url, tmp_path, params=params)
-        with open(tmp_path, "rb") as fr:
-            with open(file_path, "wb") as fw:
-                fw.write(fr.read())
-        os.remove(tmp_path)
+        # 下载速度
+        now_size, now_t = sum([file.size for file in files]), time.time()
+        delta_size, delta_t = now_size - size, now_t - t
+        size, t = now_size, now_t
+        if delta_t < 1e-6:
+            delta_t = 1e-6
+        speed = delta_size / delta_t
+
+        # 下载进度
+        if total_size != 0:
+            len_done = bar_length * size // total_size
+            len_undone = bar_length - len_done
+            print('{}{} {}/{} {:12}'.format("#" * len_done, "_" * len_undone,
+                size_format(size), size_format(total_size),
+                size_format(speed)+"/s").ljust(max_length), end='\r')
+        else:
+            num_done = sum([file.done for file in files])
+            num_total = len(files)
+            len_done = bar_length * num_done // num_total
+            len_undone = bar_length - len_done
+            print('{}{} {} {:12}'.format("#" * len_done, "_" * len_undone,
+                size_format(size), size_format(speed)+"/s").ljust(max_length), end='\r')
+
+        # 监控是否全部完成
+        if all([file.done for file in files]):
+            break
+
+        try:
+            time.sleep(0.5)
+        except (SystemExit, KeyboardInterrupt):
+            raise
 
 if __name__ == "__main__":
     root = CONFIG["root"]
+    num_thread = CONFIG["num_thread"]
+    segment_size = CONFIG["segment_size"]
     url = sys.argv[1]
 
+    # 登录并获取信息
     token = login(CONFIG["username"], CONFIG["password"])
-    thread_num = CONFIG["thread_num"]
     term_id, course_name = get_summary(url)
-    base_dir = touch_dir(os.path.join(root, course_name))
     course_id = re.match(r"https://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
-    playlist = Dpl(os.path.join(base_dir, 'Playlist.dpl'))
-
     print(course_name)
     print(course_id)
+    
+    # 创建必要环境
+    base_dir = touch_dir(os.path.join(root, course_name))
+    playlist = Dpl(os.path.join(base_dir, 'Playlist.dpl'))
+
+    # 获取资源列表
     resource_list = get_resource(term_id, token)
 
-    if thread_num > 1:
-        pool = ThreadPool(thread_num)
-        for resource in resource_list:
-            task = Task(download_resource, args=(resource, token))
-            pool.add_task(task)
-        pool.run()
-        pool.join()
-    else:
-        for resource in resource_list:
-            download_resource(resource, token)
+    # 解析资源，将资源（片段）分发至线程池
+    files = []
+    pool = ThreadPool(num_thread)
+    for i, resource in enumerate(resource_list):
+        print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
+        url, file_path, params = parse_resource(resource, token)
+        if params is not None:
+            url += "?" + urlencode(params)
+        file_name = os.path.split(file_path)[-1]
+        if os.path.exists(file_path):
+            print("-----! {} already exist".format(file_name))
+        else:
+            print("-----> {}".format(file_name))
+            file = NetworkFile(url, file_path, segment_size=segment_size,
+                                spider=spider)
+            for segment in file.segments:
+                task = Task(segment.download)
+                pool.add_task(task)
+            files.append(file)
+    pool.run()
 
-    print("Done!")
+    # 启动（主线程）监控器，等待下载完成
+    manager(files)
+    print("\nDone!")

@@ -24,13 +24,11 @@ class ThreadPool():
                 break
 
     def run(self):
-        for i in range(self.num):
+        for _ in range(self.num):
             th = threading.Thread(target=self._run_task)
             th.setDaemon(True)
             self.threads.append(th)
             th.start()
 
     def join(self):
-        #for th in self.threads:
-        #    th.join()
         self._taskQ.join()
