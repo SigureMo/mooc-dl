@@ -8,9 +8,9 @@ from bs4 import BeautifulSoup
 
 from utils.crawler import Crawler
 from utils.config import Config
-from utils.filer import repair_filename, touch_dir, Dpl
 from utils.thread import ThreadPool
-from utils.async_lib.utils import Task
+from utils.common import Task, repair_filename, touch_dir
+from utils.playlist import Dpl
 
 spider = Crawler()
 VIDEO, PDF, RICH_TEXT = 1, 3, 4
@@ -83,9 +83,6 @@ def parse_resource(resource, token):
 
         # SRT
         if srt_keys:
-            headers = {
-                'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 8.0.0; SM-G9300 Build/R16NW)',
-                }
             data = {
                 't': 1,
                 'mob-token': token,
@@ -208,7 +205,7 @@ def download_resource(resource, token):
     if os.path.exists(file_path):
         print("{} is exist".format(file_path))
     else:
-        print(resource[1])
+        print(file_path)
         tmp_path = file_path + ".downloading"
         spider.download_bin(url, tmp_path, params=params)
         with open(tmp_path, "rb") as fr:
@@ -216,30 +213,30 @@ def download_resource(resource, token):
                 fw.write(fr.read())
         os.remove(tmp_path)
 
-root = CONFIG["root"]
-# url = 'https://www.icourse163.org/course/ZJU-93001?tid=1003997005'
-url = sys.argv[1]
+if __name__ == "__main__":
+    root = CONFIG["root"]
+    url = sys.argv[1]
 
-token = login(CONFIG["username"], CONFIG["password"])
-thread_num = CONFIG["thread_num"]
-term_id, course_name = get_summary(url)
-base_dir = touch_dir(os.path.join(root, course_name))
-course_id = re.match(r"https://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
-playlist = Dpl(os.path.join(base_dir, 'Playlist.dpl'))
+    token = login(CONFIG["username"], CONFIG["password"])
+    thread_num = CONFIG["thread_num"]
+    term_id, course_name = get_summary(url)
+    base_dir = touch_dir(os.path.join(root, course_name))
+    course_id = re.match(r"https://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
+    playlist = Dpl(os.path.join(base_dir, 'Playlist.dpl'))
 
-print(course_name)
-print(course_id)
-resource_list = get_resource(term_id, token)
+    print(course_name)
+    print(course_id)
+    resource_list = get_resource(term_id, token)
 
-if thread_num > 1:
-    pool = ThreadPool(thread_num)
-    for resource in resource_list:
-        task = Task(download_resource, args=(resource, token))
-        pool.add_task(task)
-    pool.run()
-    pool.join()
-else:
-    for resource in resource_list:
-        download_resource(resource, token)
+    if thread_num > 1:
+        pool = ThreadPool(thread_num)
+        for resource in resource_list:
+            task = Task(download_resource, args=(resource, token))
+            pool.add_task(task)
+        pool.run()
+        pool.join()
+    else:
+        for resource in resource_list:
+            download_resource(resource, token)
 
-print("Done!")
+    print("Done!")
