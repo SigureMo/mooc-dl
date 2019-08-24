@@ -3,6 +3,6 @@
   "password": "123456",
   "resolution": 0,
   "root": "",
-  "thread_num": 30,
+  "num_thread": 30,
   "segment_size": 10485760
 }

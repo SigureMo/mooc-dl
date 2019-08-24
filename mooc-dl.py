@@ -3,7 +3,6 @@ import hashlib
 import re
 import os
 import sys
-import time
 
 from urllib.parse import urlencode
 from bs4 import BeautifulSoup
@@ -13,7 +12,7 @@ from utils.config import Config
 from utils.thread import ThreadPool
 from utils.common import Task, repair_filename, touch_dir, size_format
 from utils.playlist import Dpl
-from utils.segment_dl import NetworkFile
+from utils.segment_dl import ResourceDispenser, DownloadManager
 
 spider = Crawler()
 VIDEO, PDF, RICH_TEXT = 1, 3, 4
@@ -198,54 +197,6 @@ def get_section_num(courseware_num, level=3):
     """ 根据等级获取课件的标号 """
     return ".".join(list((map(lambda x: str(x), courseware_num[: level]))))
 
-def manager(files):
-    """ 监控器 """
-    size, t = sum([file.size for file in files]), time.time()
-    total_size = sum([file.total for file in files])
-    while True:
-        bar_length = 50
-        max_length = 80
-        print(" Downloading... ".center(max_length, "="))
-        # 单个下载进度
-        for file in files:
-            if file.downloading:
-                if file.total:
-                    print("{} {}/{}".format(file.name, size_format(file.size),
-                                            size_format(file.total)))
-                else:
-                    print("{} {}".format(file.name, size_format(file.size)))
-
-        # 下载速度
-        now_size, now_t = sum([file.size for file in files]), time.time()
-        delta_size, delta_t = now_size - size, now_t - t
-        size, t = now_size, now_t
-        if delta_t < 1e-6:
-            delta_t = 1e-6
-        speed = delta_size / delta_t
-
-        # 下载进度
-        if total_size != 0:
-            len_done = bar_length * size // total_size
-            len_undone = bar_length - len_done
-            print('{}{} {}/{} {:12}'.format("#" * len_done, "_" * len_undone,
-                size_format(size), size_format(total_size),
-                size_format(speed)+"/s").ljust(max_length), end='\r')
-        else:
-            num_done = sum([file.done for file in files])
-            num_total = len(files)
-            len_done = bar_length * num_done // num_total
-            len_undone = bar_length - len_done
-            print('{}{} {} {:12}'.format("#" * len_done, "_" * len_undone,
-                size_format(size), size_format(speed)+"/s").ljust(max_length), end='\r')
-
-        # 监控是否全部完成
-        if all([file.done for file in files]):
-            break
-
-        try:
-            time.sleep(0.5)
-        except (SystemExit, KeyboardInterrupt):
-            raise
 
 if __name__ == "__main__":
     root = CONFIG["root"]
@@ -268,26 +219,18 @@ if __name__ == "__main__":
     resource_list = get_resource(term_id, token)
 
     # 解析资源，将资源（片段）分发至线程池
-    files = []
-    pool = ThreadPool(num_thread)
+    resources = []
     for i, resource in enumerate(resource_list):
         print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
         url, file_path, params = parse_resource(resource, token)
         if params is not None:
             url += "?" + urlencode(params)
-        file_name = os.path.split(file_path)[-1]
-        if os.path.exists(file_path):
-            print("-----! {} already exist".format(file_name))
-        else:
-            print("-----> {}".format(file_name))
-            file = NetworkFile(url, file_path, segment_size=segment_size,
-                                spider=spider)
-            for segment in file.segments:
-                task = Task(segment.download)
-                pool.add_task(task)
-            files.append(file)
-    pool.run()
+        resources.append((url, file_path))
+    dispenser = ResourceDispenser(resources, num_thread, segment_size, spider)
+    dispenser.dispense()
+    dispenser.run()
 
     # 启动（主线程）监控器，等待下载完成
-    manager(files)
+    manager = DownloadManager(dispenser.files)
+    manager.run()
     print("\nDone!")
