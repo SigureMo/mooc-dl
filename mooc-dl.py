@@ -12,7 +12,7 @@ from utils.config import Config
 from utils.thread import ThreadPool
 from utils.common import Task, repair_filename, touch_dir, size_format
 from utils.playlist import Dpl
-from utils.segment_dl import ResourceDispenser, DownloadManager
+from utils.segment_dl import FileManager
 
 spider = Crawler()
 VIDEO, PDF, RICH_TEXT = 1, 3, 4
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     course_id = re.match(r"https://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
     print(course_name)
     print(course_id)
-    
+
     # 创建必要环境
     base_dir = touch_dir(os.path.join(root, course_name))
     playlist = Dpl(os.path.join(base_dir, 'Playlist.dpl'))
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     # 获取资源列表
     resource_list = get_resource(term_id, token)
 
-    # 解析资源，将资源（片段）分发至线程池
+    # 解析资源
     resources = []
     for i, resource in enumerate(resource_list):
         print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
@@ -226,11 +226,12 @@ if __name__ == "__main__":
         if params is not None:
             url += "?" + urlencode(params)
         resources.append((url, file_path))
-    dispenser = ResourceDispenser(resources, num_thread, segment_size, spider)
-    dispenser.dispense()
-    dispenser.run()
+
+    # 将资源（片段）分发至线程池，并开始下载
+    manager = FileManager(num_thread, segment_size, spider=spider)
+    manager.dispense_resources(resources)
+    manager.run()
 
     # 启动（主线程）监控器，等待下载完成
-    manager = DownloadManager(dispenser.files)
-    manager.run()
+    manager.monitoring()
     print("\nDone!")
