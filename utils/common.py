@@ -21,32 +21,35 @@ class Task():
         return result
 
 
-class Writer():
-    """ 文件写入器，持续打开文件对象，直到使用完毕后才关闭 """
+class ClassicFile(object):
+    """典型文件（UTF-8 编码的文件）类
 
-    def __init__(self, path, mode='wb', **kw):
+    属性
+        _f：文件指针；
+        file：文件名或文件路径。
+    """
+
+    def __init__(self, path):
+        """传入一个文件名或路径，然后打开文件"""
+
+        self._f = open(path, 'w', encoding='utf_8')
         self.path = path
-        self._f = open(path, mode, **kw)
 
     def __del__(self):
+        """关闭文件，并将文件号和文件名都清空"""
+
         self._f.close()
+        del self._f
+        del self.path
 
     def flush(self):
+        """刷新缓存，写入文件"""
         self._f.flush()
 
-    def write(self, content):
-        self._f.write(content)
-
-
-class Text(Writer):
-    """ 文本写入器 """
-
-    def __init__(self, path, **kw):
-        kw['encoding'] = kw.get('encoding', 'utf-8')
-        super().__init__(path, 'w', **kw)
-
     def write_string(self, string):
-        self.write(string + '\n')
+        """向对象中打开的文件写入字符串，会自动加入换行"""
+
+        self._f.write(string + '\n')
 
 
 def touch_dir(path):

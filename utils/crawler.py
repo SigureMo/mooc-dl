@@ -12,6 +12,11 @@ class Crawler(requests.Session):
         super().__init__()
         self.headers.update(Crawler.header)
 
+    def set_cookies(self, cookies):
+        """传入一个字典，用于设置 cookies"""
+
+        requests.utils.add_dict_to_cookiejar(self.cookies, cookies)
+
     def download_bin(self, url, file_name, **kw):
         """下载二进制文件"""
 
@@ -36,8 +41,3 @@ class Crawler(requests.Session):
         res.encoding = res.apparent_encoding
         with open(file_name, 'w', encoding='utf_8') as f:
             f.write(res.text)
-
-if __name__ == '__main__':
-    spider = Crawler()
-    spider.download_text('https://www.baidu.com', 'tmp/tmp2.html')
-    spider.download_bin('https://www.baidu.com', 'tmp/tmp3.html')

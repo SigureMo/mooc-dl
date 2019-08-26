@@ -108,3 +108,6 @@ venv.bak/
 
 # course dir
 * - *
+
+# tests
+test.py
