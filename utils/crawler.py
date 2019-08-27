@@ -1,4 +1,5 @@
 import re
+import os
 import requests
 
 
@@ -17,22 +18,30 @@ class Crawler(requests.Session):
 
         requests.utils.add_dict_to_cookiejar(self.cookies, cookies)
 
-    def download_bin(self, url, file_name, **kw):
+    def download_bin(self, url, file_path, stream=True, chunk_size=1024, **kw):
         """下载二进制文件"""
 
-        if kw.pop('stream', True):
-            chunk_size = kw.pop('chunk_size', 1024)
-            res = self.get(url, stream=True, **kw)
-            with open(file_name, 'wb') as f:
-                for chunk in res.iter_content(chunk_size=chunk_size):
-                    if not chunk:
-                        break
-                    f.write(chunk)
-
+        res = self.get(url, stream=stream, **kw)
+        tmp_path = file_path + ".t"
+        try:
+            with open(tmp_path, "wb") as f:
+                if stream:
+                    for chunk in res.iter_content(chunk_size=chunk_size):
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                else:
+                    f.write(res.content)
+        except:
+            os.remove(tmp_path)
+            print("[warn] {} failed to download".format(file_path))
+        if os.path.exists(file_path):
+            with open(tmp_path, "rb") as fr:
+                with open(file_path, "wb") as fw:
+                    fw.write(fr.read())
+            os.remove(file_path)
         else:
-            res = self.get(url, **kw)
-            with open(file_name, 'wb') as f:
-                f.write(res.content)
+            os.rename(tmp_path, file_path)
 
     def download_text(self, url, file_name, **kw):
         """下载文本，以 UTF-8 编码保存文件"""

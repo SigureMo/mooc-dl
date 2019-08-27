@@ -21,7 +21,7 @@ class NetworkFile():
         path: 文件的本地存储路径
         name: 文件的名称
         segment_size: 单个片段的大小，单位为字节，默认 10MB
-        overrides: 是否强制覆盖，默认不强制覆盖
+        override: 是否强制覆盖，默认不强制覆盖
         spider: 爬虫会话，requests.Session() 的封装
         size: 本地已下载部分大小
         initialized: 文件是否处于刚刚初始化的状态
@@ -33,11 +33,11 @@ class NetworkFile():
     """
 
     def __init__(self, url, path, segment_size=10*1024*1024,
-                 overrides=False, spider=Crawler()):
+                 override=False, spider=Crawler()):
         self.url = url
         self.path = path
         self.name = os.path.split(self.path)[-1]
-        self.overrides = overrides
+        self.override = override
         self.spider = spider
         self.segment_size = segment_size
         self._status = INITIALIZED
@@ -141,7 +141,7 @@ class Segment():
         if self.file.initialized:
             self.file.switch_status()
 
-        if self.file.overrides:
+        if self.file.override:
             self.remove()
         self.size = self.get_size()
         if not os.path.exists(self.path):
@@ -174,10 +174,13 @@ class Segment():
                 else:
                     f.write(res.content)
             # 从临时文件迁移，并删除临时文件
-            with open(self.tmp_path, "rb") as fr:
-                with open(self.path, "wb") as fw:
-                    fw.write(fr.read())
-            os.remove(self.tmp_path)
+            if os.path.exists(self.path):
+                with open(self.tmp_path, "rb") as fr:
+                    with open(self.path, "wb") as fw:
+                        fw.write(fr.read())
+                os.remove(self.path)
+            else:
+                os.rename(self.tmp_path, self.path)
         self.switch_status()
 
         # 检查是否所有片段均已下载完成，如果是则合并
@@ -233,15 +236,15 @@ class FileManager():
     属性
         files: 待管理文件 List
         pool: 线程池
-        overrides: 是否强制覆盖，默认不强制覆盖
+        override: 是否强制覆盖，默认不强制覆盖
         spider: 爬虫会话，requests.Session() 的封装
         segment_size: 片段大小，单位为字节
     """
 
-    def __init__(self, num_thread, segment_size, overrides=False, spider=Crawler()):
+    def __init__(self, num_thread, segment_size, override=False, spider=Crawler()):
         self.files = []
         self.pool = ThreadPool(num_thread)
-        self.overrides = overrides
+        self.override = override
         self.spider = spider
         self.segment_size = segment_size
 
@@ -251,14 +254,14 @@ class FileManager():
         for i, (url, file_path) in enumerate(resources):
             print("dispenser resources {}/{}".format(i, len(resources)), end="\r")
             file_name = os.path.split(file_path)[-1]
-            if os.path.exists(file_path) and not self.overrides:
+            if os.path.exists(file_path) and not self.override:
                 if log:
                     print("------! {} already exist".format(file_name))
             else:
                 if log:
                     print("------> {}".format(file_name))
                 file = NetworkFile(url, file_path, segment_size=self.segment_size,
-                                   overrides=self.overrides, spider=self.spider)
+                                   override=self.override, spider=self.spider)
                 for segment in file.segments:
                     task = Task(segment.download)
                     self.pool.add_task(task)
@@ -273,11 +276,20 @@ class FileManager():
         files = self.files
         size, t = sum([file.size for file in files]), time.time()
         total_size = sum([file.total for file in files])
-        center_placeholder = "[center]"
+        center_placeholder = "%(center)s"
         while len(files):
             bar_length = 50
             max_length = 80
             log_string = " Downloading... ".center(max_length, "=") + "\n"
+
+            # 下载速度
+            now_size, now_t = sum([file.size for file in files]), time.time()
+            delta_size, delta_t = now_size - size, now_t - t
+            size, t = now_size, now_t
+            if delta_t < 1e-6:
+                delta_t = 1e-6
+            speed = delta_size / delta_t
+
             # 单个下载进度
             for file in files:
                 if file.downloading:
@@ -294,14 +306,6 @@ class FileManager():
                     line = line.replace(center_placeholder, max(
                         max_length-len(line)+len(center_placeholder), 0)*"-")
                     log_string += line + "\n"
-
-            # 下载速度
-            now_size, now_t = sum([file.size for file in files]), time.time()
-            delta_size, delta_t = now_size - size, now_t - t
-            size, t = now_size, now_t
-            if delta_t < 1e-6:
-                delta_t = 1e-6
-            speed = delta_size / delta_t
 
             # 下载进度
             if total_size != 0:
@@ -328,7 +332,7 @@ class FileManager():
                 break
 
             try:
-                time.sleep(0.5)
+                time.sleep(max(1-(time.time()-now_t), 0.01))
             except (SystemExit, KeyboardInterrupt):
                 raise
 
