@@ -185,11 +185,11 @@ def get_resource(term_id, token):
                             get_section_num(courseware_num, level=2) + " " + repair_filename(lesson["name"]),
                             get_section_num(courseware_num, level=3) + " " + repair_filename(json_content["fileName"])
                         )
-                        resource_list.append(
+                        resource_list.append((
                             RICH_TEXT,
                             file_path,
                             json_content
-                        )
+                        ))
 
     return resource_list
 
