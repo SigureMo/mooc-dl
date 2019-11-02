@@ -19,6 +19,7 @@ VIDEO, PDF, RICH_TEXT = 1, 3, 4
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36',
+    # 'edu-app-version': '3.17.1',
 }
 srt_types = ["zh-cn", "en"]
 spider.headers.update(headers)
@@ -81,31 +82,56 @@ def get_summary(url):
 def parse_resource(resource, token):
     """ 解析课件链接、参数 """
     if resource[0] == VIDEO:
-        _, file_path, unit_id, content_id, video_url, srt_keys = resource
+        _, file_path, unit_id, content_id = resource
 
-        # SRT
-        if srt_keys:
-            data = {
-                't': 1,
-                'mob-token': token,
-                'unitId': unit_id,
-                'cid': content_id,
-                }
-            res = spider.post('https://www.icourse163.org/mob/course/learn/v1', data = data)
-            for srt_key in res.json()['results']['learnInfo']['srtKeys']:
-                srt_path = file_path[:-4] + "_" + srt_types[srt_key["lang"]] + ".srt"
-                srt_url = srt_key['nosUrl']
-                spider.download_bin(srt_url, srt_path)
-
-        # VIDEO
-        api_url = 'http://www.icourse163.org/mob/course/getVideoAuthorityToken/v1'
-        res = spider.post(api_url, headers=headers)
-        video_key = res.json().get("results").get("videoKey")
-
+        # get signature
         data = {
-            'key': video_key,
-            'Xtask': "{}_{}_{}".format(course_id, term_id, unit_id)
+            'bizType': 1,
+            'mob-token': token,
+            'bizId': unit_id,
+            'contentType': 1
         }
+
+        res = spider.post("https://www.icourse163.org/mob/j/v1/mobileResourceRpcBean.getResourceToken.rpc", data=data)
+        signature = res.json()['results']['videoSignDto']['signature']
+
+        # get urls
+        data = {
+            "enVersion": 1,
+            "clientType": 2,
+            "mob-token": token,
+            "signature": signature,
+            "videoId": content_id
+        }
+        res = spider.post('https://vod.study.163.com/mob/api/v1/vod/videoByNative', data=data)
+        videos = res.json()['results']['videoInfo']['videos']
+
+        # select quality
+        resolutions = [3, 2, 1]
+        resolution = resolutions[CONFIG['resolution']:] + list(reversed(resolutions[:CONFIG['resolution']]))
+        for reso in resolution:
+            for video in videos:
+                if video['quality'] == reso:
+                    video_url = video['videoUrl']
+                    break
+            else:
+                continue
+            break
+
+        # SRT，暂未探索，先不解析
+        # if srt_keys:
+        #     data = {
+        #         't': 1,
+        #         'mob-token': token,
+        #         'unitId': unit_id,
+        #         'cid': content_id,
+        #         }
+        #     res = spider.post('https://www.icourse163.org/mob/course/learn/v1', data = data)
+        #     for srt_key in res.json()['results']['learnInfo']['srtKeys']:
+        #         srt_path = file_path[:-4] + "_" + srt_types[srt_key["lang"]] + ".srt"
+        #         srt_url = srt_key['nosUrl']
+        #         spider.download_bin(srt_url, srt_path)
+
         return video_url, file_path, data
 
     elif resource[0] == PDF:
@@ -148,25 +174,14 @@ def get_resource(term_id, token):
                 touch_dir(os.path.dirname(file_path))
 
                 if unit['contentType'] == VIDEO:
-                    resolutions = ['videoSHDUrl', 'videoHDUrl', 'sdMp4Url']
-                    ext_list = ['.flv', '.mp4', '.mp4']
-                    resolution = resolutions[CONFIG['resolution']:] + list(reversed(resolutions[:CONFIG['resolution']]))
-                    for reso in resolution:
-                        if unit['resourceInfo'].get(reso):
-                            video_url = unit['resourceInfo'][reso]
-                            ext = ext_list[resolutions.index(reso)]
-                            break
-
+                    ext = '.mp4'
                     file_path += ext
-                    srt_keys = unit['resourceInfo'].get('srtKeys')
                     playlist.write_path(file_path)
                     resource_list.append((
                         VIDEO,
                         file_path,
                         unit['id'],
-                        unit['contentId'],
-                        video_url,
-                        srt_keys
+                        unit['contentId']
                     ))
                 elif unit['contentType'] == PDF:
                     file_path += ".pdf"
