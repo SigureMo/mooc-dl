@@ -12,7 +12,7 @@ from utils.config import Config
 from utils.thread import ThreadPool
 from utils.common import Task, repair_filename, touch_dir, size_format
 from utils.playlist import Dpl
-from utils.segment_dl import FileManager
+from utils.downloader import FileManager
 
 spider = Crawler()
 VIDEO, PDF, RICH_TEXT = 1, 3, 4
@@ -132,7 +132,7 @@ def parse_resource(resource, token):
         #         srt_url = srt_key['nosUrl']
         #         spider.download_bin(srt_url, srt_path)
 
-        return video_url, file_path, data
+        return video_url, file_path, None
 
     elif resource[0] == PDF:
         _, file_path, unit_id, content_id = resource
@@ -212,11 +212,20 @@ def get_section_num(courseware_num, level=3):
     """ 根据等级获取课件的标号 """
     return ".".join(list((map(lambda x: str(x), courseware_num[: level]))))
 
+def merge(merge_list):
+    """ 合并待合并列表 """
+    for i, merge_file in enumerate(merge_list):
+        print("merging {}/{}".format(i, len(merge_list)), end="\r")
+        file_path = merge_file['target']
+        with open(file_path, 'wb') as fw:
+            for ts_path in merge_file['segments']:
+                with open(ts_path, 'rb') as fr:
+                    fw.write(fr.read())
+                os.remove(ts_path)
 
 if __name__ == "__main__":
     root = CONFIG["root"]
     num_thread = CONFIG["num_thread"]
-    segment_size = CONFIG["segment_size"]
     url = sys.argv[1]
 
     # 登录并获取信息
@@ -235,18 +244,41 @@ if __name__ == "__main__":
 
     # 解析资源
     resources = []
+    merge_list = []
     for i, resource in enumerate(resource_list):
         print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
         url, file_path, params = parse_resource(resource, token)
-        if params is not None:
-            url += "?" + urlencode(params)
-        resources.append((url, file_path))
+        if '.m3u8' in url:
+            merge_file = {
+                'target': file_path,
+                'segments': []
+            }
+            id = 0
+            m3u8_text = spider.get(url).text
+            for line in m3u8_text.split('\n'):
+                if line.endswith('.ts'):
+                    ts_url = '/'.join(url.split('/')[: -1]) + '/' + line
+                    ts_path = '{}{:03d}.ts'.format(file_path.rstrip('.mp4'), id)
+                    # print(ts_url, ts_path)
+                    resources.append((ts_url, ts_path))
+                    id += 1
+                    merge_file['segments'].append(ts_path)
+            merge_list.append(merge_file)
+
+        else:
+            if params is not None:
+                url += "?" + urlencode(params)
+            resources.append((url, file_path))
 
     # 将资源（片段）分发至线程池，并开始下载
-    manager = FileManager(num_thread, segment_size, spider=spider)
+    manager = FileManager(num_thread, spider=spider)
     manager.dispense_resources(resources)
     manager.run()
 
     # 启动（主线程）监控器，等待下载完成
     manager.monitoring()
+
+    # 合并所有 ts 片段
+    merge(merge_list)
+
     print("\nDone!")
