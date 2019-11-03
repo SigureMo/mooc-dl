@@ -111,3 +111,6 @@ venv.bak/
 
 # tests
 test.py
+
+# Others
+.DS_Store
