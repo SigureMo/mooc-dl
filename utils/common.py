@@ -69,7 +69,8 @@ def touch_file(path):
 def repair_filename(filename):
     """ 修复不合法的文件名 """
     regex_path = re.compile(r'[\\/:*?"<>|]')
-    return regex_path.sub('', filename)
+    regex_spaces = re.compile(r'\s+')
+    return regex_spaces.sub(' ', regex_path.sub('', filename))
 
 
 def get_size(path):
