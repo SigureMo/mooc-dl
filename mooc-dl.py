@@ -248,6 +248,10 @@ if __name__ == "__main__":
     for i, resource in enumerate(resource_list):
         print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
         url, file_path, params = parse_resource(resource, token)
+        # 过滤掉已经下载的资源
+        if os.path.exists(file_path):
+            print('[info] {} already exists!'.format(file_path))
+            continue
         if '.m3u8' in url:
             merge_file = {
                 'target': file_path,
