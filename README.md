@@ -4,12 +4,12 @@
 
 本程序提供一键下载中国大学MOOC全课件功能，仅供学习使用，版权归中国大学 MOOC 所有，不用于任何商业用途
 
-主要作为 `course-clawer/icourse163` 备用接口（~~也许哪天电脑端的接口不那么好爬了~~嗯，真的不好爬了，不过移动端也……）
+主要作为 `course-clawer/icourse163` 备用接口
 
 近期中 M 视频接口全面变更为 m3u8 了，所以可以说必须要下载、合并了，所以 `course-crawler` 暂时不支持中 M 视频下载，要下载视频先用这个备用的吧，但是这里并不会做像 `course-crawler` 那么结构化的下载方式
 
 - [ ] 暂未支持字幕
-- [ ] 断点恢复机制也没做好，没 merge 的可能最后也 merge 不了了
+- [ ] 进度条体验不佳
 
 但上面的这些……暂时都不想做了……再说吧……
 
@@ -28,7 +28,7 @@ pip install -r requirements.txt
   "username": <icourse_user_name>,        // 你的爱课程账号
   "password": <icourse_password>,         // 你的爱课程账号密码
   "resolution": <resolution_level>,       // 清晰度等级，可选 0,1,2 清晰度递减
-  "root": <root_dir>,                     // 下载目标路径
+  "root": <root_dir>,                     // 下载目标根目录
   "num_thread": <num_thread>              // 下载线程数
 }
 ```
