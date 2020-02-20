@@ -3,6 +3,7 @@ import hashlib
 import re
 import os
 import sys
+import time
 
 from urllib.parse import urlencode
 from bs4 import BeautifulSoup
@@ -92,7 +93,11 @@ def parse_resource(resource, token):
             'contentType': 1
         }
 
-        res = spider.post("https://www.icourse163.org/mob/j/v1/mobileResourceRpcBean.getResourceToken.rpc", data=data)
+        while True:
+            res = spider.post("https://www.icourse163.org/mob/j/v1/mobileResourceRpcBean.getResourceToken.rpc", data=data)
+            if res.json()['results'] is not None:
+                break
+            time.sleep(0.5)
         signature = res.json()['results']['videoSignDto']['signature']
 
         # get urls
@@ -231,7 +236,7 @@ if __name__ == "__main__":
     # 登录并获取信息
     token = login(CONFIG["username"], CONFIG["password"])
     term_id, course_name = get_summary(url)
-    course_id = re.match(r"https://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
+    course_id = re.match(r"https?://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
     print(course_name)
     print(course_id)
 
