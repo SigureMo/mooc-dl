@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 之后在 `config.json` 中对一些参数进行配置就可以使用啦（登录只支持爱课程账号，因为其他的做起来太复杂，如果嫌注册太麻烦，直接使用这里放的共享账号就好）
 
-``` json
+```
 {
   "username": <icourse_user_name>,        // 你的爱课程账号
   "password": <icourse_password>,         // 你的爱课程账号密码
@@ -39,6 +39,6 @@ pip install -r requirements.txt
 python mooc-dl.py https://www.icourse163.org/course/ZJU-93001?tid=1003997005
 ```
 
-# Recommendation
+# More
 
 [Course Crawler(Forked from Foair/course-crawler)](https://github.com/SigureMo/course-crawler) 支持更多的课程与资源类型~
