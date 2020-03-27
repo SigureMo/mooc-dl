@@ -68,9 +68,13 @@ def touch_file(path):
 
 def repair_filename(filename):
     """ 修复不合法的文件名 """
+    def to_full_width_chr(matchobj):
+        char = matchobj.group(0)
+        full_width_char = chr(ord(char) + + ord('？') - ord('?'))
+        return full_width_char
     regex_path = re.compile(r'[\\/:*?"<>|]')
     regex_spaces = re.compile(r'\s+')
-    return regex_spaces.sub(' ', regex_path.sub('', filename))
+    return regex_spaces.sub(' ', regex_path.sub(to_full_width_chr, filename))
 
 
 def get_size(path):
