@@ -72,29 +72,30 @@ class NetworkFile():
         self.size = self.get_size()
 
         if not os.path.exists(self.path):
-            # 设置 headers
-            headers = dict(self.spider.headers)
-            if self.total:
-                headers["Range"] = "bytes={}-".format(self.size)
+            downloaded = False
+            while not downloaded:
+                # 设置 headers
+                headers = dict(self.spider.headers)
+                if self.total:
+                    headers["Range"] = "bytes={}-".format(self.size)
 
-            # 建立连接并下载
-            connected = False
-            while not connected:
                 try:
+                    # 尝试建立连接
                     res = self.spider.get(
-                        self.url, stream=True, headers=headers)
-                    connected = True
-                except:
-                    print("[warn] content failed, try again...")
-            with open(self.tmp_path, 'ab') as f:
-                if stream:
-                    for chunk in res.iter_content(chunk_size=chunk_size):
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        self.size += len(chunk)
-                else:
-                    f.write(res.content)
+                        self.url, stream=True, headers=headers, timeout=(5, 10))
+                    # 下载到临时路径
+                    with open(self.tmp_path, 'ab') as f:
+                        if stream:
+                            for chunk in res.iter_content(chunk_size=chunk_size):
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                                self.size += len(chunk)
+                        else:
+                            f.write(res.content)
+                    downloaded = True
+                except requests.exceptions.RequestException:
+                    print("[warn] request timeout, trying again...")
             # 从临时文件迁移，并删除临时文件
             if os.path.exists(self.path):
                 os.remove(self.path)
