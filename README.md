@@ -13,7 +13,7 @@
 
 但上面的这些……暂时都不想做了……再说吧……
 
-# Usage
+## Usage
 
 在运行之前请确保安装 Python3.5 及以上版本，并安装依赖
 
@@ -31,6 +31,8 @@ pip install -r requirements.txt
   "root": <root_dir>,                     // 下载目标根目录
   "num_thread": <num_thread>,             // 下载线程数
   "overwrite": false                      // 强制覆盖已有文件
+  "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}"
+                                          // 文件存储路径模板，可据此自定义文件
 }
 ```
 
@@ -40,6 +42,18 @@ pip install -r requirements.txt
 python mooc-dl.py https://www.icourse163.org/course/ZJU-93001?tid=1003997005
 ```
 
-# More
+## Tips
+
+### 关于文件路径
+
+默认的文件路径是分级的，如果你不喜欢这样的效果，完全可以修改模板进行自定义，比如类似 course-crawler 那种分类式，你只需要将模版设置成这样即可
+
+```
+{
+   "file_path_template": "{base_dir}{sep}{type}{sep}{cnt_3} {unit_name}"
+}
+```
+
+## More
 
 [Course Crawler(Forked from Foair/course-crawler)](https://github.com/SigureMo/course-crawler) 支持更多的课程与资源类型~
