@@ -75,10 +75,10 @@ def get_summary(url):
 
     term_id = re.search(r'termId : "(\d+)"', res).group(1)
     names = re.findall(r'name:"(.+)"', res)
-    course_name = " - ".join(names)
+    course_name = " - ".join(names[1: ])
     # term_ids = re.findall(r'id : "(\d+)",\ncourse', res)
 
-    return term_id, course_name
+    return term_id, repair_filename(course_name)
 
 def parse_resource(resource, token):
     """ 解析课件链接、参数 """

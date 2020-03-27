@@ -36,12 +36,8 @@ class Crawler(requests.Session):
             os.remove(tmp_path)
             print("[warn] {} failed to download".format(file_path))
         if os.path.exists(file_path):
-            with open(tmp_path, "rb") as fr:
-                with open(file_path, "wb") as fw:
-                    fw.write(fr.read())
             os.remove(file_path)
-        else:
-            os.rename(tmp_path, file_path)
+        os.rename(tmp_path, file_path)
 
     def download_text(self, url, file_name, **kw):
         """下载文本，以 UTF-8 编码保存文件"""
