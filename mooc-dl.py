@@ -17,6 +17,11 @@ from utils.downloader import FileManager
 
 spider = Crawler()
 VIDEO, PDF, RICH_TEXT = 1, 3, 4
+COURSEWARE = {
+    VIDEO: 'Video',
+    PDF: 'PDF',
+    RICH_TEXT: 'Rich_text'
+}
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36',
@@ -169,12 +174,19 @@ def get_resource(term_id, token):
     for chapter_num, chapter in enumerate(course_info.get('results').get('termDto').get('chapters')):
         for lesson_num, lesson in enumerate(chapter.get('lessons')):
             for unit_num, unit in enumerate(lesson.get('units')):
+                if unit['contentType'] not in COURSEWARE:
+                    continue
                 courseware_num = (chapter_num+1, lesson_num+1, unit_num+1)
-                file_path = os.path.join(
-                    base_dir,
-                    get_section_num(courseware_num, level=1) + " " + repair_filename(chapter["name"]),
-                    get_section_num(courseware_num, level=2) + " " + repair_filename(lesson["name"]),
-                    get_section_num(courseware_num, level=3) + " " + repair_filename(unit["name"])
+                file_path = CONFIG['file_path_template'].format(
+                    base_dir=base_dir,
+                    sep=os.path.sep,
+                    type=COURSEWARE.get(unit['contentType'], 'Unknown'),
+                    cnt_1=get_section_num(courseware_num, level=1),
+                    cnt_2=get_section_num(courseware_num, level=2),
+                    cnt_3=get_section_num(courseware_num, level=3),
+                    chapter_name=repair_filename(chapter["name"]),
+                    lesson_name=repair_filename(lesson["name"]),
+                    unit_name=repair_filename(unit["name"])
                 )
                 touch_dir(os.path.dirname(file_path))
 
@@ -199,11 +211,16 @@ def get_resource(term_id, token):
                 elif unit['contentType'] == RICH_TEXT:
                     if unit.get('jsonContent'):
                         json_content = eval(unit['jsonContent'])
-                        file_path = os.path.join(
-                            base_dir,
-                            get_section_num(courseware_num, level=1) + " " + repair_filename(chapter["name"]),
-                            get_section_num(courseware_num, level=2) + " " + repair_filename(lesson["name"]),
-                            get_section_num(courseware_num, level=3) + " " + repair_filename(json_content["fileName"])
+                        file_path = CONFIG['file_path_template'].format(
+                            base_dir=base_dir,
+                            sep=os.path.sep,
+                            type='File',
+                            cnt_1=get_section_num(courseware_num, level=1),
+                            cnt_2=get_section_num(courseware_num, level=2),
+                            cnt_3=get_section_num(courseware_num, level=3),
+                            chapter_name=repair_filename(chapter["name"]),
+                            lesson_name=repair_filename(lesson["name"]),
+                            unit_name=repair_filename(json_content["fileName"])
                         )
                         resource_list.append((
                             RICH_TEXT,
@@ -213,9 +230,9 @@ def get_resource(term_id, token):
 
     return resource_list
 
-def get_section_num(courseware_num, level=3):
+def get_section_num(courseware_num, level=3, sep='.', template='{:d}'):
     """ 根据等级获取课件的标号 """
-    return ".".join(list((map(lambda x: str(x), courseware_num[: level]))))
+    return sep.join(list((map(lambda x: template.format(x), courseware_num[: level]))))
 
 def merge(merge_list):
     """ 合并待合并列表 """
