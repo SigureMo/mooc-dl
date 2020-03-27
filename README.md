@@ -29,7 +29,8 @@ pip install -r requirements.txt
   "password": <icourse_password>,         // 你的爱课程账号密码
   "resolution": <resolution_level>,       // 清晰度等级，可选 0,1,2 清晰度递减
   "root": <root_dir>,                     // 下载目标根目录
-  "num_thread": <num_thread>              // 下载线程数
+  "num_thread": <num_thread>,             // 下载线程数
+  "overwrite": false                      // 强制覆盖已有文件
 }
 ```
 
