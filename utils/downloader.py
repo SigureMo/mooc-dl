@@ -98,8 +98,7 @@ class NetworkFile():
             # 从临时文件迁移，并删除临时文件
             if os.path.exists(self.path):
                 os.remove(self.path)
-            else:
-                os.rename(self.tmp_path, self.path)
+            os.rename(self.tmp_path, self.path)
         self.switch_status()
 
     def remove(self):
