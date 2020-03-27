@@ -2,6 +2,7 @@ import os
 import re
 import time
 import math
+import requests
 
 from utils.common import Task, size_format
 from utils.crawler import Crawler
