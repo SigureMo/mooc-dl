@@ -8,7 +8,6 @@
 
 近期中 M 视频接口全面变更为 m3u8 了，所以可以说必须要下载、合并了，所以 `course-crawler` 暂时不支持中 M 视频下载，要下载视频先用这个备用的吧，但是这里并不会做像 `course-crawler` 那么结构化的下载方式
 
-- [ ] 暂未支持字幕
 - [ ] 进度条体验不佳
 
 但上面的这些……暂时都不想做了……再说吧……
@@ -32,7 +31,7 @@ pip install -r requirements.txt
   "num_thread": <num_thread>,             // 下载线程数
   "overwrite": false                      // 强制覆盖已有文件
   "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}"
-                                          // 文件存储路径模板，可据此自定义文件
+                                          // 文件存储路径模板，可据此自定义文件存储路径
 }
 ```
 

@@ -27,7 +27,6 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36',
     # 'edu-app-version': '3.17.1',
 }
-srt_types = ["zh-cn", "en"]
 spider.headers.update(headers)
 CONFIG = Config()
 
@@ -128,19 +127,13 @@ def parse_resource(resource, token):
                 continue
             break
 
-        # SRT，暂未探索，先不解析
-        # if srt_keys:
-        #     data = {
-        #         't': 1,
-        #         'mob-token': token,
-        #         'unitId': unit_id,
-        #         'cid': content_id,
-        #         }
-        #     res = spider.post('https://www.icourse163.org/mob/course/learn/v1', data = data)
-        #     for srt_key in res.json()['results']['learnInfo']['srtKeys']:
-        #         srt_path = file_path[:-4] + "_" + srt_types[srt_key["lang"]] + ".srt"
-        #         srt_url = srt_key['nosUrl']
-        #         spider.download_bin(srt_url, srt_path)
+        # download subtitle
+        srt_info = res.json()['results']['videoInfo']['srtCaptions']
+        if srt_info:
+            for srt_item in srt_info:
+                srt_path = os.path.splitext(file_path)[0] + "_" + srt_item['languageCode'] + ".srt"
+                srt_url = srt_item['url']
+                spider.download_bin(srt_url, srt_path)
 
         return video_url, file_path, None
 
