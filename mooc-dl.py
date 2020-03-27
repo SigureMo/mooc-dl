@@ -222,11 +222,20 @@ def merge(merge_list):
     for i, merge_file in enumerate(merge_list):
         print("merging {}/{}".format(i, len(merge_list)), end="\r")
         file_path = merge_file['target']
-        with open(file_path, 'wb') as fw:
-            for ts_path in merge_file['segments']:
-                with open(ts_path, 'rb') as fr:
-                    fw.write(fr.read())
-                os.remove(ts_path)
+        tmp_path = file_path + '.mg'
+        try:
+            with open(tmp_path, 'wb') as fw:
+                for ts_path in merge_file['segments']:
+                    with open(ts_path, 'rb') as fr:
+                        fw.write(fr.read())
+                    os.remove(ts_path)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        except:
+            print('[Error] 合并被强制中止...')
+            os.remove(tmp_path)
+        os.rename(tmp_path, file_path)
+
 
 if __name__ == "__main__":
     root = CONFIG["root"]
@@ -254,7 +263,7 @@ if __name__ == "__main__":
         print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
         url, file_path, params = parse_resource(resource, token)
         # 过滤掉已经下载的资源
-        if os.path.exists(file_path):
+        if os.path.exists(file_path) and not CONFIG['overwrite']:
             print('[info] {} already exists!'.format(file_path))
             continue
         if '.m3u8' in url:
@@ -280,7 +289,7 @@ if __name__ == "__main__":
             resources.append((url, file_path))
 
     # 将资源（片段）分发至线程池，并开始下载
-    manager = FileManager(num_thread, spider=spider)
+    manager = FileManager(num_thread, spider=spider, overwrite=CONFIG['overwrite'])
     manager.dispense_resources(resources)
     manager.run()
 
