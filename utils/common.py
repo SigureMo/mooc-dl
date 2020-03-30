@@ -72,9 +72,23 @@ def repair_filename(filename):
         char = matchobj.group(0)
         full_width_char = chr(ord(char) + + ord('？') - ord('?'))
         return full_width_char
+    # 路径非法字符，转全角
     regex_path = re.compile(r'[\\/:*?"<>|]')
+    # 空格类字符，转空格
     regex_spaces = re.compile(r'\s+')
-    return regex_spaces.sub(' ', regex_path.sub(to_full_width_chr, filename))
+    # 不可打印字符，移除
+    regex_non_printable = re.compile(
+        r'[\001\002\003\004\005\006\007\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f'
+        r'\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a]')
+    # 原有标号，移除
+    regex_sort = re.compile(r'^[第一二三四五六七八九十\d]+[\s\d._\-章课节讲]*[.\s、\-]\s*\d*')
+
+    filename = regex_path.sub(to_full_width_chr, filename)
+    filename = regex_spaces.sub(' ', filename)
+    filename = regex_non_printable.sub('', filename)
+    filename = regex_sort.sub('', filename)
+    filename = filename.strip()
+    return filename
 
 
 def get_size(path):
