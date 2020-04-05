@@ -25,7 +25,6 @@ COURSEWARE = {
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36',
-    # 'edu-app-version': '3.17.1',
 }
 spider.headers.update(headers)
 CONFIG = Config()
@@ -179,7 +178,8 @@ def get_resource(term_id, token):
                     cnt_3=get_section_num(courseware_num, level=3),
                     chapter_name=repair_filename(chapter["name"]),
                     lesson_name=repair_filename(lesson["name"]),
-                    unit_name=repair_filename(unit["name"])
+                    unit_name=repair_filename(os.path.splitext(unit["name"])[0]) + \
+                                            os.path.splitext(unit["name"])[1]
                 )
                 touch_dir(os.path.dirname(file_path))
 
@@ -213,8 +213,11 @@ def get_resource(term_id, token):
                             cnt_3=get_section_num(courseware_num, level=3),
                             chapter_name=repair_filename(chapter["name"]),
                             lesson_name=repair_filename(lesson["name"]),
-                            unit_name=repair_filename(json_content["fileName"])
+                            unit_name=repair_filename(os.path.splitext(json_content["fileName"])[0]) + \
+                                                    os.path.splitext(json_content["fileName"])[1]
                         )
+                        touch_dir(os.path.dirname(file_path))
+
                         resource_list.append((
                             RICH_TEXT,
                             file_path,
