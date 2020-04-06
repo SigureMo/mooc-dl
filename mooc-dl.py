@@ -178,8 +178,7 @@ def get_resource(term_id, token):
                     cnt_3=get_section_num(courseware_num, level=3),
                     chapter_name=repair_filename(chapter["name"]),
                     lesson_name=repair_filename(lesson["name"]),
-                    unit_name=repair_filename(os.path.splitext(unit["name"])[0]) + \
-                                            os.path.splitext(unit["name"])[1]
+                    unit_name=repair_filename(unit["name"])
                 )
                 touch_dir(os.path.dirname(file_path))
 
