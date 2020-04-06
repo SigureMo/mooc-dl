@@ -4,7 +4,7 @@ import time
 import math
 import requests
 
-from utils.common import Task, size_format
+from utils.common import Task, size_format, get_string_width
 from utils.crawler import Crawler
 from utils.thread import ThreadPool
 
@@ -212,10 +212,10 @@ class FileManager():
             # 单个下载进度
             for file in files:
                 if file.downloading:
-                    line = "{}{} {}/{}".format(file.name, center_placeholder, size_format(file.size),
+                    line = "{} {} {}/{}".format(file.name, center_placeholder, size_format(file.size),
                                                 size_format(file.total))
                     line = line.replace(center_placeholder, max(
-                        max_length-len(line)+len(center_placeholder), 0)*"-")
+                        max_length-get_string_width(line)+len(center_placeholder), 0)*"-")
                     log_string += line + "\n"
 
             # 下载进度
