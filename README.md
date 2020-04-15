@@ -2,15 +2,7 @@
 
 ![python 3.6.7](https://img.shields.io/badge/python-3.6.7-green?style=flat-square&logo=python)
 
-本程序提供一键下载中国大学MOOC全课件功能，仅供学习使用，版权归中国大学 MOOC 所有，不用于任何商业用途
-
-主要作为 `course-clawer/icourse163` 备用接口
-
-近期中 M 视频接口全面变更为 m3u8 了，所以可以说必须要下载、合并了，所以 `course-crawler` 暂时不支持中 M 视频下载，要下载视频先用这个备用的吧，但是这里并不会做像 `course-crawler` 那么结构化的下载方式
-
-- [ ] 进度条体验不佳
-
-但上面的这些……暂时都不想做了……再说吧……
+本程序提供中国大学 MOOC 课件的下载，方便离线观看与复习，但本程序及其所得内容不可用于商业用途
 
 ## Usage
 
@@ -53,6 +45,12 @@ python mooc-dl.py https://www.icourse163.org/course/ZJU-93001?tid=1003997005
 }
 ```
 
-## More
+### 进度条的问题
 
-[Course Crawler(Forked from Foair/course-crawler)](https://github.com/SigureMo/course-crawler) 支持更多的课程与资源类型~
+暂时进度条体验非常不佳，但不影响下载功能
+
+## License
+
+<!-- 鉴于某“开源”项目明显借鉴了 [Course-Crawler](https://github.com/Foair/course-crawler) 的代码却用于商业化，所以-->本 Repo 转用 GPL-3.0 协议开源
+
+请遵守该开源协议使用本项目，本项目源程序及所得内容均不可用于商业用途
