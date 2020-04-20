@@ -267,6 +267,7 @@ if __name__ == "__main__":
 
     # 获取资源列表
     resource_list = get_resource(term_id, token)
+    resource_list = [resource for resource in resource_list if resource[0] in CONFIG['file_type']]
 
     # 解析资源
     resources = []
