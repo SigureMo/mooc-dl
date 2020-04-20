@@ -158,7 +158,7 @@ def parse_resource(resource, token):
         return api_url, file_path, data
 
 
-def get_resource(term_id, token):
+def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
     """ 获取课件信息 """
     resource_list = []
 
@@ -166,7 +166,7 @@ def get_resource(term_id, token):
     for chapter_num, chapter in enumerate(course_info.get('results').get('termDto').get('chapters')):
         for lesson_num, lesson in enumerate(chapter.get('lessons')):
             for unit_num, unit in enumerate(lesson.get('units')):
-                if unit['contentType'] not in COURSEWARE:
+                if unit['contentType'] not in file_types:
                     continue
                 courseware_num = (chapter_num+1, lesson_num+1, unit_num+1)
                 file_path = CONFIG['file_path_template'].format(
@@ -266,8 +266,7 @@ if __name__ == "__main__":
     playlist = Dpl(os.path.join(base_dir, 'Playlist.dpl'))
 
     # 获取资源列表
-    resource_list = get_resource(term_id, token)
-    resource_list = [resource for resource in resource_list if resource[0] in CONFIG['file_type']]
+    resource_list = get_resource(term_id, token, file_types=CONFIG['file_types'])
 
     # 解析资源
     resources = []

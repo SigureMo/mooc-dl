@@ -21,10 +21,10 @@ pip install -r requirements.txt
   "resolution": <resolution_level>,       // 清晰度等级，可选 0,1,2 清晰度递减
   "root": <root_dir>,                     // 下载目标根目录
   "num_thread": <num_thread>,             // 下载线程数
-  "overwrite": false                      // 强制覆盖已有文件
+  "overwrite": false,                     // 强制覆盖已有文件
   "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}",
                                           // 文件存储路径模板，可据此自定义文件存储路径
-  "file_type": [1, 3, 4]                  // 下载文件类型。可选 1、3、4，分别代表视频、PDF、文本。默认仅下载 PDF
+  "file_types": [1, 3, 4]                 // 下载文件类型，可选 1,3,4，分别代表视频、PDF、附件，默认全部下载
 }
 ```
 
