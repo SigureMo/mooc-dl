@@ -18,9 +18,9 @@ pip install -r requirements.txt
 {
   "username": <icourse_user_name>,        // 你的爱课程账号
   "password": <icourse_password>,         // 你的爱课程账号密码
-  "resolution": <resolution_level>,       // 清晰度等级，可选 0,1,2 清晰度递减
-  "root": <root_dir>,                     // 下载目标根目录
-  "num_thread": <num_thread>,             // 下载线程数
+  "resolution": 0,                        // 清晰度等级，可选 0,1,2 清晰度递减
+  "root": "",                             // 下载目标根目录
+  "num_thread": 30,                       // 下载线程数
   "overwrite": false,                     // 强制覆盖已有文件
   "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}",
                                           // 文件存储路径模板，可据此自定义文件存储路径
@@ -52,6 +52,4 @@ python mooc-dl.py https://www.icourse163.org/course/ZJU-93001?tid=1003997005
 
 ## License
 
-<!-- 鉴于某“开源”项目明显借鉴了 [Course-Crawler](https://github.com/Foair/course-crawler) 的代码却用于商业化，所以-->本 Repo 转用 GPL-3.0 协议开源
-
-请遵守该开源协议使用本项目，本项目源程序及所得内容均不可用于商业用途
+本 Repo 采用 GPL-3.0 协议开源，请遵守该开源协议使用本项目，本项目源程序及所得内容均不可用于商业用途
