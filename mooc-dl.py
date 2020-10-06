@@ -14,6 +14,7 @@ from utils.thread import ThreadPool
 from utils.common import Task, repair_filename, touch_dir, size_format
 from utils.playlist import Dpl
 from utils.downloader import FileManager
+from utils.ffmpeg import FFmpeg
 
 spider = Crawler()
 spider.trust_env = False
@@ -189,24 +190,20 @@ def get_section_num(courseware_num, level=3, sep=".", template="{:d}"):
     return sep.join(list((map(lambda x: template.format(x), courseware_num[:level]))))
 
 
-def merge(merge_list):
+def merge(merge_list, ffmpeg=None):
     """ 合并待合并列表 """
     for i, merge_file in enumerate(merge_list):
         print("merging {}/{}".format(i, len(merge_list)), end="\r")
         file_path = merge_file["target"]
-        tmp_path = file_path + ".mg"
-        try:
-            with open(tmp_path, "wb") as fw:
+        if ffmpeg is not None:
+            ffmpeg.join_videos(merge_file["segments"], file_path)
+        else:
+            with open(file_path, "wb") as fw:
                 for ts_path in merge_file["segments"]:
                     with open(ts_path, "rb") as fr:
                         fw.write(fr.read())
-                    os.remove(ts_path)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        except:
-            print("[Error] 合并被强制中止...")
-            os.remove(tmp_path)
-        os.rename(tmp_path, file_path)
+        for ts_path in merge_file["segments"]:
+            os.remove(ts_path)
 
 
 if __name__ == "__main__":
@@ -265,6 +262,9 @@ if __name__ == "__main__":
     manager.monitoring()
 
     # 合并所有 ts 片段
-    merge(merge_list)
+    ffmpeg = None
+    if CONFIG["use_ffmpeg"]:
+        ffmpeg = FFmpeg()
+    merge(merge_list, ffmpeg=ffmpeg)
 
     print("\nDone!")

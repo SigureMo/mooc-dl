@@ -8,7 +8,7 @@
 
 在运行之前请确保安装 Python3.5 及以上版本，并安装依赖
 
-``` bash
+```bash
 pip install -r requirements.txt
 ```
 
@@ -21,16 +21,17 @@ pip install -r requirements.txt
   "resolution": 0,                        // 清晰度等级，可选 0,1,2 清晰度递减
   "root": "",                             // 下载目标根目录
   "num_thread": 30,                       // 下载线程数
-  "overwrite": false,                     // 强制覆盖已有文件
+  "overwrite": false,                     // 是否强制覆盖已有文件
   "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}",
                                           // 文件存储路径模板，可据此自定义文件存储路径
-  "file_types": [1, 3, 4]                 // 下载文件类型，可选 1,3,4，分别代表视频、PDF、附件，默认全部下载
+  "file_types": [1, 3, 4],                // 下载文件类型，可选 1,3,4，分别代表视频、PDF、附件，默认全部下载
+  "use-ffmpeg": false                     // 是否使用 FFmpeg 进行合并，需自行安装 FFmpeg
 }
 ```
 
 下载时，只需要以网址作为参数传入即可
 
-``` bash
+```bash
 python mooc-dl.py https://www.icourse163.org/course/ZJU-93001?tid=1003997005
 ```
 
