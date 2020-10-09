@@ -25,7 +25,7 @@ pip install -r requirements.txt
   "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}",
                                           // 文件存储路径模板，可据此自定义文件存储路径
   "file_types": [1, 3, 4],                // 下载文件类型，可选 1,3,4，分别代表视频、PDF、附件，默认全部下载
-  "use-ffmpeg": false                     // 是否使用 FFmpeg 进行合并，需自行安装 FFmpeg
+  "use_ffmpeg": false                     // 是否使用 FFmpeg 进行合并，需自行安装 FFmpeg
 }
 ```
 
