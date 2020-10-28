@@ -58,8 +58,9 @@ class FFmpeg:
         with open(concat_list_path, "w", encoding="utf-8") as f:
             for video_path in video_path_list:
                 if os.path.isfile(video_path):
-                    video_relpath = os.path.relpath(video_path, start=self.tmp_dir)
-                    f.write("file '{}'\n".format(video_relpath))
+                    # video_relpath = os.path.relpath(video_path, start=self.tmp_dir)
+                    video_abspath = os.path.abspath(video_path)
+                    f.write("file '{}'\n".format(video_abspath))
         # fmt: off
         params = [
             "-f", "concat",
