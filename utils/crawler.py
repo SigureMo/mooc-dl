@@ -1,4 +1,3 @@
-import re
 import os
 import requests
 
@@ -6,7 +5,7 @@ import requests
 class Crawler(requests.Session):
 
     header = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36',
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
     }
 
     def __init__(self):
@@ -44,5 +43,5 @@ class Crawler(requests.Session):
 
         res = self.get(url, **kw)
         res.encoding = res.apparent_encoding
-        with open(file_name, 'w', encoding='utf_8') as f:
+        with open(file_name, "w", encoding="utf_8") as f:
             f.write(res.text)

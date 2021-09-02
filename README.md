@@ -1,7 +1,5 @@
 # mooc-dl
 
-![python 3.6.7](https://img.shields.io/badge/python-3.6.7-green?style=flat-square&logo=python)
-
 本程序提供中国大学 MOOC 课件的下载，方便离线观看与复习，但本程序及其所得内容不可用于商业用途
 
 ## Usage
@@ -14,10 +12,11 @@ pip install -r requirements.txt
 
 之后在 `config.json` 中对一些参数进行配置就可以使用啦（登录只支持爱课程账号，因为其他的做起来太复杂，如果嫌注册太麻烦，直接使用这里放的共享账号就好）
 
-```
+<!-- prettier-ignore -->
+```jsonc
 {
-  "username": <icourse_user_name>,        // 你的爱课程账号
-  "password": <icourse_password>,         // 你的爱课程账号密码
+  "username": "<icourse_user_name>",      // 你的爱课程账号
+  "password": "<icourse_password>",       // 你的爱课程账号密码
   "resolution": 0,                        // 清晰度等级，可选 0,1,2 清晰度递减
   "root": "",                             // 下载目标根目录
   "num_thread": 30,                       // 下载线程数
@@ -41,7 +40,7 @@ python mooc-dl.py https://www.icourse163.org/course/ZJU-93001?tid=1003997005
 
 默认的文件路径是分级的，如果你不喜欢这样的效果，完全可以修改模板进行自定义，比如类似 course-crawler 那种分类式，你只需要将模版设置成这样即可
 
-```
+```jsonc
 {
    "file_path_template": "{base_dir}{sep}{type}{sep}{cnt_3} {unit_name}"
 }

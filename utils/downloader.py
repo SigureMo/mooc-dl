@@ -1,7 +1,6 @@
 import os
 import re
 import time
-import math
 import requests
 
 from utils.common import Task, size_format, get_string_width
@@ -14,8 +13,8 @@ DOWNLOADING = 2
 DONE = 4
 
 
-class NetworkFile():
-    """ 网络文件类，对应一个网络文件资源
+class NetworkFile:
+    """网络文件类，对应一个网络文件资源
 
     属性
         url: 文件的网络地址
@@ -33,7 +32,7 @@ class NetworkFile():
     def __init__(self, url, path, overwrite=False, spider=Crawler()):
         self.url = url
         self.path = path
-        self.tmp_path = self.path + '.t'
+        self.tmp_path = self.path + ".t"
         self.name = os.path.split(self.path)[-1]
         self.overwrite = overwrite
         self.spider = spider
@@ -42,25 +41,24 @@ class NetworkFile():
         self.size = 0
 
     def _get_head(self):
-        """ 连接测试，获取文件大小与是否可分段 """
+        """连接测试，获取文件大小与是否可分段"""
         headers = dict(self.spider.headers)
-        headers['Range'] = 'bytes=0-4'
+        headers["Range"] = "bytes=0-4"
         try:
-            res = self.spider.head(
-                self.url, headers=headers, allow_redirects=True, timeout=20)
-            crange = res.headers['Content-Range']
-            self.total = int(re.match(r'^bytes 0-4/(\d+)$', crange).group(1))
+            res = self.spider.head(self.url, headers=headers, allow_redirects=True, timeout=20)
+            crange = res.headers["Content-Range"]
+            self.total = int(re.match(r"^bytes 0-4/(\d+)$", crange).group(1))
             return
         except:
             pass
         try:
             res = self.spider.head(self.url, allow_redirects=True, timeout=20)
-            self.total = int(res.headers['Content-Length'])
+            self.total = int(res.headers["Content-Length"])
         except:
             self.total = 0
 
     def download(self, stream=True, chunk_size=1024):
-        """ 下载片段 """
+        """下载片段"""
 
         # 更改状态
         self.switch_status()
@@ -82,10 +80,9 @@ class NetworkFile():
 
                 try:
                     # 尝试建立连接
-                    res = self.spider.get(
-                        self.url, stream=True, headers=headers, timeout=(5, 10))
+                    res = self.spider.get(self.url, stream=True, headers=headers, timeout=(5, 10))
                     # 下载到临时路径
-                    with open(self.tmp_path, 'ab') as f:
+                    with open(self.tmp_path, "ab") as f:
                         if stream:
                             for chunk in res.iter_content(chunk_size=chunk_size):
                                 if not chunk:
@@ -104,18 +101,18 @@ class NetworkFile():
         self.switch_status()
 
     def remove(self):
-        """ 删除文件 """
+        """删除文件"""
         if os.path.exists(self.tmp_path):
             os.remove(self.tmp_path)
         if os.path.exists(self.path):
             os.remove(self.path)
 
     def switch_status(self):
-        """ 切换到下一状态 """
+        """切换到下一状态"""
         self._status <<= 1
 
     def get_size(self):
-        """ 获取本地文件大小 """
+        """获取本地文件大小"""
 
         try:
             if os.path.exists(self.tmp_path):
@@ -130,22 +127,22 @@ class NetworkFile():
 
     @property
     def initialized(self):
-        """ 返回状态字段是否是 INITIALIZED """
+        """返回状态字段是否是 INITIALIZED"""
         return self._status == INITIALIZED
 
     @property
     def downloading(self):
-        """ 返回状态字段是否是 DOWNLOADING """
+        """返回状态字段是否是 DOWNLOADING"""
         return self._status == DOWNLOADING
 
     @property
     def done(self):
-        """ 返回状态字段是否是 DONE """
+        """返回状态字段是否是 DONE"""
         return self._status == DONE
 
 
-class FileManager():
-    """ 文件管理器
+class FileManager:
+    """文件管理器
 
     负责资源的分发与文件监控
 
@@ -163,7 +160,7 @@ class FileManager():
         self.spider = spider
 
     def dispense_resources(self, resources, log=True):
-        """ 资源分发，将资源切分为片段，并分发至线程池 """
+        """资源分发，将资源切分为片段，并分发至线程池"""
 
         for i, (url, file_path) in enumerate(resources):
             print("dispenser resources {}/{}".format(i, len(resources)), end="\r")
@@ -180,11 +177,11 @@ class FileManager():
                 self.files.append(file)
 
     def run(self):
-        """ 启动任务 """
+        """启动任务"""
         self.pool.run()
 
     def monitoring(self):
-        """ 启动监控器 """
+        """启动监控器"""
         files = self.files
         size, t = sum([file.size for file in files]), time.time()
         total_size = sum([file.total for file in files])
@@ -212,30 +209,36 @@ class FileManager():
             # 单个下载进度
             for file in files:
                 if file.downloading:
-                    line = "{} {} {}/{}".format(file.name, center_placeholder, size_format(file.size),
-                                                size_format(file.total))
-                    line = line.replace(center_placeholder, max(
-                        max_length-get_string_width(line)+len(center_placeholder), 0)*"-")
+                    line = "{} {} {}/{}".format(
+                        file.name, center_placeholder, size_format(file.size), size_format(file.total)
+                    )
+                    line = line.replace(
+                        center_placeholder, max(max_length - get_string_width(line) + len(center_placeholder), 0) * "-"
+                    )
                     log_string += line + "\n"
 
             # 下载进度
             if total_size != 0:
                 len_done = bar_length * size // total_size
                 len_undone = bar_length - len_done
-                log_string += '{}{} {}/{} {:12}'.format("#" * len_done, "_" * len_undone,
-                                                        size_format(size), size_format(
-                                                            total_size),
-                                                        size_format(speed)+"/s")
+                log_string += "{}{} {}/{} {:12}".format(
+                    "#" * len_done,
+                    "_" * len_undone,
+                    size_format(size),
+                    size_format(total_size),
+                    size_format(speed) + "/s",
+                )
             else:
                 num_done = sum([file.done for file in files])
                 num_total = len(files)
                 len_done = bar_length * num_done // num_total
                 len_undone = bar_length - len_done
-                log_string += '{}{} {} {:12}'.format("#" * len_done, "_" * len_undone,
-                                                     size_format(size), size_format(speed)+"/s")
+                log_string += "{}{} {} {:12}".format(
+                    "#" * len_done, "_" * len_undone, size_format(size), size_format(speed) + "/s"
+                )
 
             # 清空控制台并打印新的 log
-            os.system('cls' if os.name == 'nt' else 'clear')
+            os.system("cls" if os.name == "nt" else "clear")
             print(log_string)
 
             # 监控是否全部完成
@@ -243,9 +246,9 @@ class FileManager():
                 break
 
             try:
-                time.sleep(max(1-(time.time()-now_t), 0.01))
+                time.sleep(max(1 - (time.time() - now_t), 0.01))
             except (SystemExit, KeyboardInterrupt):
                 raise
 
         # 清空控制台
-        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system("cls" if os.name == "nt" else "clear")

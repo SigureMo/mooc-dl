@@ -3,7 +3,7 @@
   "password": "123456",
   "resolution": 0,
   "root": "",
-  "num_thread": 30,
+  "num_thread": 16,
   "overwrite": false,
   "file_path_template": "{base_dir}{sep}{cnt_1} {chapter_name}{sep}{cnt_2} {lesson_name}{sep}{cnt_3} {unit_name}",
   "file_types": [1, 3, 4],

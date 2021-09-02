@@ -1,4 +1,3 @@
-import json
 import hashlib
 import re
 import os
@@ -6,12 +5,10 @@ import sys
 import time
 
 from urllib.parse import urlencode
-from bs4 import BeautifulSoup
 
 from utils.crawler import Crawler
 from utils.config import Config
-from utils.thread import ThreadPool
-from utils.common import Task, repair_filename, touch_dir, size_format
+from utils.common import repair_filename, touch_dir
 from utils.playlist import Dpl
 from utils.downloader import FileManager
 from utils.ffmpeg import FFmpeg
@@ -22,19 +19,25 @@ VIDEO, PDF, RICH_TEXT = 1, 3, 4
 COURSEWARE = {VIDEO: "Video", PDF: "PDF", RICH_TEXT: "Rich_text"}
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36",
+    "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 10; PCT-AL10 Build/HUAWEIPCT-AL10)",
+    "edu-app-channel": "ucmooc_offical",
+    "edu-app-type": "android",
+    "edu-app-version": "4.19.0",
 }
 spider.headers.update(headers)
 CONFIG = Config()
 
 
 def login(username, password):
-    """ 登录获取 token """
+    """登录获取 token"""
     pd = hashlib.md5()
     pd.update(password.encode("utf-8"))
     passwd = pd.hexdigest()
-    headers = {"edu-app-type": "android", "edu-app-version": "2.6.1"}
-    data = {"username": username, "passwd": passwd, "mob-token": ""}
+    data = {
+        "username": username,
+        "passwd": passwd,
+        "mob-token": "",
+    }
     res = spider.post("http://www.icourse163.org/mob/logonByIcourse", headers=headers, data=data)
     result = res.json()
     code = result.get("status").get("code")
@@ -49,8 +52,11 @@ def login(username, password):
 
 
 def get_courseinfo(tid, token):
-    """ 获取完整课程信息 """
-    data = {"tid": tid, "mob-token": token}
+    """获取完整课程信息"""
+    data = {
+        "tid": tid,
+        "mob-token": token,
+    }
     url = "https://www.icourse163.org/mob/course/courseLearn/v1"
     res = spider.post(url, data=data)
     return res.json()
@@ -64,14 +70,14 @@ def get_summary(url):
 
     term_id = re.search(r'termId : "(\d+)"', res).group(1)
     names = re.findall(r'name:"(.+)"', res)
-    course_name = " - ".join(names[1:])
+    course_name = " - ".join(names)
     # term_ids = re.findall(r'id : "(\d+)",\ncourse', res)
 
     return term_id, repair_filename(course_name)
 
 
 def parse_resource(resource, token):
-    """ 解析课件链接、参数 """
+    """解析课件链接、参数"""
     if resource[0] == VIDEO:
         _, file_path, unit_id, content_id = resource
 
@@ -132,12 +138,12 @@ def parse_resource(resource, token):
 
 
 def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
-    """ 获取课件信息 """
+    """获取课件信息"""
     resource_list = []
 
     course_info = get_courseinfo(term_id, token)
     for chapter_num, chapter in enumerate(course_info.get("results").get("termDto").get("chapters")):
-        for lesson_num, lesson in enumerate(chapter.get("lessons")):
+        for lesson_num, lesson in enumerate(chapter.get("lessons") if chapter.get("lessons") is not None else []):
             for unit_num, unit in enumerate(lesson.get("units")):
                 if unit["contentType"] not in file_types:
                     continue
@@ -186,12 +192,12 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
 
 
 def get_section_num(courseware_num, level=3, sep=".", template="{:d}"):
-    """ 根据等级获取课件的标号 """
+    """根据等级获取课件的标号"""
     return sep.join(list((map(lambda x: template.format(x), courseware_num[:level]))))
 
 
 def merge(merge_list, ffmpeg=None):
-    """ 合并待合并列表 """
+    """合并待合并列表"""
     for i, merge_file in enumerate(merge_list):
         print("merging {}/{}".format(i, len(merge_list)), end="\r")
         file_path = merge_file["target"]
