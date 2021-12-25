@@ -109,8 +109,8 @@ venv.bak/
 # course dir
 * - *
 
-# tests
-test.py
+# temp files
+*.tmp
 
 # Others
 .DS_Store

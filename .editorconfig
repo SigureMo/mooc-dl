@@ -16,3 +16,6 @@ indent_size = 4
 
 [*.md]
 indent_size = 3
+
+[*.json]
+insert_final_newline = ignore
