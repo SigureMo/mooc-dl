@@ -3,6 +3,7 @@ import re
 import os
 import sys
 import time
+import argparse
 
 from urllib.parse import urlencode
 
@@ -26,6 +27,68 @@ headers = {
 }
 spider.headers.update(headers)
 CONFIG = Config()
+
+
+def handle_args(config):
+    parser = argparse.ArgumentParser(description="中国大学 MOOC 下载器")
+    parser.add_argument("-u", "--username", type=str, default=None)
+    parser.add_argument("-p", "--password", type=str, default=None)
+    parser.add_argument("-q", "--resolution", type=int, choices=[0, 1, 2], default=None)
+    parser.add_argument("-d", "--root", type=str, default=None)
+    parser.add_argument("-n", "--num_thread", type=int, default=None)
+    parser.add_argument("-w", "--overwrite", action="store_true")
+    parser.add_argument("-tp", "--file-path-template", type=str, default=None)
+    parser.add_argument("--range", type=str, default=None)
+    parser.add_argument("--file-types", type=str, default=None)
+    parser.add_argument("--use-ffmpeg", action="store_true")
+    parser.add_argument("url", type=str)
+
+    def _parse_range(range_str):
+        assert "~" in range_str, "range 应当使用 ~ 作为分隔符"
+        start, end = range_str.split("~")
+        # 允许 a.b.c~ 或者 ~a.b.c 甚至 ~
+        start = start if start else "0.0.0"
+        end = end if end else "999.999.999"
+        # 允许 a.b~c，自动补零为 a.b.0~c.0.0
+        start = start.split(".")
+        start = list(map(lambda x: int(x), start))
+        start = start + (3 - len(start)) * [0]
+        end = end.split(".")
+        end = list(map(lambda x: int(x), end))
+        end = end + (3 - len(end)) * [0]
+        return {
+            "start": start,
+            "end": end,
+        }
+
+    def _parse_file_types(file_types_str):
+        file_types = file_types_str.split(",").strip()
+        file_types = list(map(lambda x: int(x), file_types))
+        return file_types
+
+    args = parser.parse_args()
+    if args.username is not None:
+        config["username"] = args.username
+    if args.password is not None:
+        config["password"] = args.password
+    if args.root is not None:
+        config["root"] = args.root
+    if args.resolution is not None:
+        config["resolution"] = args.resolution
+    if args.num_thread is not None:
+        config["num_thread"] = args.num_thread
+    if args.overwrite:
+        config["overwrite"] = True
+    if args.file_path_template is not None:
+        config["file_path_template"] = args.file_path_template
+    if args.range is not None:
+        config["range"] = _parse_range(args.range)
+    if args.file_types is not None:
+        config["file_types"] = _parse_file_types(args.file_types)
+    if args.use_ffmpeg:
+        config["use_ffmpeg"] = True
+
+    return args.url
 
 
 def login(username, password):
@@ -148,6 +211,8 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
                 if unit["contentType"] not in file_types:
                     continue
                 courseware_num = (chapter_num + 1, lesson_num + 1, unit_num + 1)
+                if courseware_num < tuple(CONFIG["range"]["start"]) or courseware_num > tuple(CONFIG["range"]["end"]):
+                    continue
                 file_path = CONFIG["file_path_template"].format(
                     base_dir=base_dir,
                     sep=os.path.sep,
@@ -213,9 +278,9 @@ def merge(merge_list, ffmpeg=None):
 
 
 if __name__ == "__main__":
+    url = handle_args(CONFIG)
     root = CONFIG["root"]
     num_thread = CONFIG["num_thread"]
-    url = sys.argv[1]
 
     # 登录并获取信息
     token = login(CONFIG["username"], CONFIG["password"])
