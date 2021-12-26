@@ -287,7 +287,12 @@ if __name__ == "__main__":
     # 登录并获取信息
     token = login(CONFIG["username"], CONFIG["password"])
     term_id, course_name = get_summary(url)
-    course_id = re.match(r"https?://www.icourse163.org/(course|learn)/\w+-(\d+)", url).group(2)
+    match_obj = re.match(r"https?://www.icourse163.org/(course|learn)/\w+-(\d+)", url)
+    if match_obj is None:
+        print("无法解析的链接：{}，请检查链接是否错误……".format(url))
+        sys.exit(1)
+
+    course_id = match_obj.group(2)
     print(course_name)
     print(course_id)
 
