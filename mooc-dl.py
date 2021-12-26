@@ -44,18 +44,20 @@ def handle_args(config):
     parser.add_argument("url", type=str)
 
     def _parse_range(range_str):
-        assert "~" in range_str, "range 应当使用 ~ 作为分隔符"
+        INF = 999
+        if "~" not in range_str:
+            range_str = f"{range_str}~{range_str}"
         start, end = range_str.split("~")
         # 允许 a.b.c~ 或者 ~a.b.c 甚至 ~
         start = start if start else "0.0.0"
-        end = end if end else "999.999.999"
-        # 允许 a.b~c，自动补零为 a.b.0~c.0.0
+        end = end if end else f"{INF}.{INF}.{INF}"
+        # 允许 a.b~c，自动补零为 a.b.0~c.INF.INF
         start = start.split(".")
         start = list(map(lambda x: int(x), start))
         start = start + (3 - len(start)) * [0]
         end = end.split(".")
         end = list(map(lambda x: int(x), end))
-        end = end + (3 - len(end)) * [0]
+        end = end + (3 - len(end)) * [INF]
         return {
             "start": start,
             "end": end,

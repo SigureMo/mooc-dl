@@ -4,7 +4,7 @@
 
 ## Usage
 
-在运行之前请确保安装 Python3.5 及以上版本，并安装依赖
+在运行之前请确保安装 Python3.6 及以上版本，并安装依赖
 
 ```bash
 pip install -r requirements.txt
