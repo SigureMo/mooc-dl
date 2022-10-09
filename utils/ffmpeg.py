@@ -66,7 +66,7 @@ class FFmpeg:
         # fmt: off
         params = [
             "-f", "concat",
-            "-safe", "-1",
+            "-safe", "0",
             "-i", concat_list_path,
             "-c", "copy",
             "-y",
