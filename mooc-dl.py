@@ -133,7 +133,11 @@ def get_summary(url):
     url = url.replace("learn/", "course/")
     res = spider.get(url).text
 
-    term_id = re.search(r'termId : "(\d+)"', res).group(1)
+    term_match = re.search(r'termId : "(\d+)"', res)
+    if not term_match:
+        print("无法获取课程信息！")
+        sys.exit(1)
+    term_id = term_match.group(1)
     names = re.findall(r'name:"(.+)"', res)
     course_name = " - ".join(names)
     # term_ids = re.findall(r'id : "(\d+)",\ncourse', res)
