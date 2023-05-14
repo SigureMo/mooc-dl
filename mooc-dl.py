@@ -133,7 +133,11 @@ def get_summary(url):
     url = url.replace("learn/", "course/")
     res = spider.get(url).text
 
-    term_id = re.search(r'termId : "(\d+)"', res).group(1)
+    term_match = re.search(r'termId : "(\d+)"', res)
+    if not term_match:
+        print("无法获取课程信息！")
+        sys.exit(1)
+    term_id = term_match.group(1)
     names = re.findall(r'name:"(.+)"', res)
     course_name = " - ".join(names)
     # term_ids = re.findall(r'id : "(\d+)",\ncourse', res)
@@ -286,13 +290,13 @@ if __name__ == "__main__":
 
     # 登录并获取信息
     token = login(CONFIG["username"], CONFIG["password"])
-    term_id, course_name = get_summary(url)
-    match_obj = re.match(r"https?://www.icourse163.org/(course|learn)/\w+-(\d+)", url)
+    match_obj = re.match(r"https?://www.icourse163.org(/spoc)?/(course|learn)/\w+-(\d+)", url)
     if match_obj is None:
         print("无法解析的链接：{}，请检查链接是否错误……".format(url))
         sys.exit(1)
 
-    course_id = match_obj.group(2)
+    term_id, course_name = get_summary(url)
+    course_id = match_obj.group(3)
     print(course_name)
     print(course_id)
 
