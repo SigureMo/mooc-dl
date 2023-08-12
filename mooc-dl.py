@@ -344,6 +344,7 @@ if __name__ == "__main__":
     manager.monitoring()
 
     # 合并所有 ts 片段
+    os.chdir(base_dir)    # 工作目录和目标可能不在一个盘符
     ffmpeg = None
     if CONFIG["use_ffmpeg"]:
         ffmpeg = FFmpeg()
