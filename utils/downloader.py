@@ -1,12 +1,12 @@
 import os
 import re
 import time
+
 import requests
 
-from utils.common import Task, size_format, get_string_width
+from utils.common import Task, get_string_width, size_format
 from utils.crawler import Crawler
 from utils.thread import ThreadPool
-
 
 INITIALIZED = 1
 DOWNLOADING = 2
@@ -45,7 +45,9 @@ class NetworkFile:
         headers = dict(self.spider.headers)
         headers["Range"] = "bytes=0-4"
         try:
-            res = self.spider.head(self.url, headers=headers, allow_redirects=True, timeout=20)
+            res = self.spider.head(
+                self.url, headers=headers, allow_redirects=True, timeout=20
+            )
             crange = res.headers["Content-Range"]
             self.total = int(re.match(r"^bytes 0-4/(\d+)$", crange).group(1))
             return
@@ -80,7 +82,9 @@ class NetworkFile:
 
                 try:
                     # 尝试建立连接
-                    res = self.spider.get(self.url, stream=True, headers=headers, timeout=(5, 10))
+                    res = self.spider.get(
+                        self.url, stream=True, headers=headers, timeout=(5, 10)
+                    )
                     # 下载到临时路径
                     with open(self.tmp_path, "ab") as f:
                         if stream:
@@ -93,7 +97,7 @@ class NetworkFile:
                             f.write(res.content)
                     downloaded = True
                 except requests.exceptions.RequestException:
-                    print("[warn] request timeout, trying again...")
+                    print("[WARNING] request timeout, trying again...")
             # 从临时文件迁移，并删除临时文件
             if os.path.exists(self.path):
                 os.remove(self.path)
@@ -171,7 +175,9 @@ class FileManager:
             else:
                 if log:
                     print("------> {}".format(file_name))
-                file = NetworkFile(url, file_path, overwrite=self.overwrite, spider=self.spider)
+                file = NetworkFile(
+                    url, file_path, overwrite=self.overwrite, spider=self.spider
+                )
                 task = Task(file.download)
                 self.pool.add_task(task)
                 self.files.append(file)
@@ -210,10 +216,20 @@ class FileManager:
             for file in files:
                 if file.downloading:
                     line = "{} {} {}/{}".format(
-                        file.name, center_placeholder, size_format(file.size), size_format(file.total)
+                        file.name,
+                        center_placeholder,
+                        size_format(file.size),
+                        size_format(file.total),
                     )
                     line = line.replace(
-                        center_placeholder, max(max_length - get_string_width(line) + len(center_placeholder), 0) * "-"
+                        center_placeholder,
+                        max(
+                            max_length
+                            - get_string_width(line)
+                            + len(center_placeholder),
+                            0,
+                        )
+                        * "-",
                     )
                     log_string += line + "\n"
 
@@ -234,7 +250,10 @@ class FileManager:
                 len_done = bar_length * num_done // num_total
                 len_undone = bar_length - len_done
                 log_string += "{}{} {} {:12}".format(
-                    "#" * len_done, "_" * len_undone, size_format(size), size_format(speed) + "/s"
+                    "#" * len_done,
+                    "_" * len_undone,
+                    size_format(size),
+                    size_format(speed) + "/s",
                 )
 
             # 清空控制台并打印新的 log

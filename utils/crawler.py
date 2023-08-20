@@ -1,9 +1,9 @@
 import os
+
 import requests
 
 
 class Crawler(requests.Session):
-
     header = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36",
     }
@@ -33,7 +33,7 @@ class Crawler(requests.Session):
                     f.write(res.content)
         except:
             os.remove(tmp_path)
-            print("[warn] {} failed to download".format(file_path))
+            print("[WARNING] {} failed to download".format(file_path))
         if os.path.exists(file_path):
             os.remove(file_path)
         os.rename(tmp_path, file_path)

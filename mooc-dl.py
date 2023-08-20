@@ -1,18 +1,17 @@
+import argparse
 import hashlib
-import re
 import os
+import re
 import sys
 import time
-import argparse
-
 from urllib.parse import urlencode
 
-from utils.crawler import Crawler
-from utils.config import Config
 from utils.common import repair_filename, touch_dir
-from utils.playlist import Dpl
+from utils.config import Config
+from utils.crawler import Crawler
 from utils.downloader import FileManager
 from utils.ffmpeg import FFmpeg
+from utils.playlist import Dpl
 
 spider = Crawler()
 spider.trust_env = False
@@ -35,7 +34,7 @@ def handle_args(config):
     parser.add_argument("-p", "--password", type=str, default=None)
     parser.add_argument("-q", "--resolution", type=int, choices=[0, 1, 2], default=None)
     parser.add_argument("-d", "--root", type=str, default=None)
-    parser.add_argument("-n", "--num_thread", type=int, default=None)
+    parser.add_argument("-n", "--num-thread", type=int, default=None)
     parser.add_argument("-w", "--overwrite", action="store_true")
     parser.add_argument("-tp", "--file-path-template", type=str, default=None)
     parser.add_argument("--range", type=str, default=None)
@@ -103,7 +102,9 @@ def login(username, password):
         "passwd": passwd,
         "mob-token": "",
     }
-    res = spider.post("http://www.icourse163.org/mob/logonByIcourse", headers=headers, data=data)
+    res = spider.post(
+        "http://www.icourse163.org/mob/logonByIcourse", headers=headers, data=data
+    )
     result = res.json()
     code = result.get("status").get("code")
     if code == 0:
@@ -155,7 +156,8 @@ def parse_resource(resource, token):
 
         while True:
             res = spider.post(
-                "https://www.icourse163.org/mob/j/v1/mobileResourceRpcBean.getResourceToken.rpc", data=data
+                "https://www.icourse163.org/mob/j/v1/mobileResourceRpcBean.getResourceToken.rpc",
+                data=data,
             )
             if res.json()["results"] is not None:
                 break
@@ -163,13 +165,23 @@ def parse_resource(resource, token):
         signature = res.json()["results"]["videoSignDto"]["signature"]
 
         # get urls
-        data = {"enVersion": 1, "clientType": 2, "mob-token": token, "signature": signature, "videoId": content_id}
-        res = spider.post("https://vod.study.163.com/mob/api/v1/vod/videoByNative", data=data)
+        data = {
+            "enVersion": 1,
+            "clientType": 2,
+            "mob-token": token,
+            "signature": signature,
+            "videoId": content_id,
+        }
+        res = spider.post(
+            "https://vod.study.163.com/mob/api/v1/vod/videoByNative", data=data
+        )
         videos = res.json()["results"]["videoInfo"]["videos"]
 
         # select quality
         resolutions = [3, 2, 1]
-        resolution = resolutions[CONFIG["resolution"] :] + list(reversed(resolutions[: CONFIG["resolution"]]))
+        resolution = resolutions[CONFIG["resolution"] :] + list(
+            reversed(resolutions[: CONFIG["resolution"]])
+        )
         for reso in resolution:
             for video in videos:
                 if video["quality"] == reso:
@@ -183,7 +195,12 @@ def parse_resource(resource, token):
         srt_info = res.json()["results"]["videoInfo"]["srtCaptions"]
         if srt_info:
             for srt_item in srt_info:
-                srt_path = os.path.splitext(file_path)[0] + "_" + srt_item["languageCode"] + ".srt"
+                srt_path = (
+                    os.path.splitext(file_path)[0]
+                    + "_"
+                    + srt_item["languageCode"]
+                    + ".srt"
+                )
                 srt_url = srt_item["url"]
                 spider.download_bin(srt_url, srt_path)
 
@@ -195,6 +212,9 @@ def parse_resource(resource, token):
         api_url = "http://www.icourse163.org/mob/course/learn/v1"
         data = {"t": 3, "cid": content_id, "unitId": unit_id, "mob-token": token}
         res = spider.post(api_url, data=data)
+        if res.json()["results"] is None:
+            print(f"[WARNING] 无法获取课件 {file_path}，疑似该学期已关闭")
+            return None, file_path, None
         pdf_url = res.json()["results"]["learnInfo"]["textOrigUrl"]
         return pdf_url, file_path, None
 
@@ -211,13 +231,19 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
     resource_list = []
 
     course_info = get_courseinfo(term_id, token)
-    for chapter_num, chapter in enumerate(course_info.get("results").get("termDto").get("chapters")):
-        for lesson_num, lesson in enumerate(chapter.get("lessons") if chapter.get("lessons") is not None else []):
+    for chapter_num, chapter in enumerate(
+        course_info.get("results").get("termDto").get("chapters")
+    ):
+        for lesson_num, lesson in enumerate(
+            chapter.get("lessons") if chapter.get("lessons") is not None else []
+        ):
             for unit_num, unit in enumerate(lesson.get("units")):
                 if unit["contentType"] not in file_types:
                     continue
                 courseware_num = (chapter_num + 1, lesson_num + 1, unit_num + 1)
-                if courseware_num < tuple(CONFIG["range"]["start"]) or courseware_num > tuple(CONFIG["range"]["end"]):
+                if courseware_num < tuple(
+                    CONFIG["range"]["start"]
+                ) or courseware_num > tuple(CONFIG["range"]["end"]):
                     continue
                 file_path = CONFIG["file_path_template"].format(
                     base_dir=base_dir,
@@ -236,10 +262,14 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
                     ext = ".mp4"
                     file_path += ext
                     playlist.write_path(file_path)
-                    resource_list.append((VIDEO, file_path, unit["id"], unit["contentId"]))
+                    resource_list.append(
+                        (VIDEO, file_path, unit["id"], unit["contentId"])
+                    )
                 elif unit["contentType"] == PDF:
                     file_path += ".pdf"
-                    resource_list.append((PDF, file_path, unit["id"], unit["contentId"]))
+                    resource_list.append(
+                        (PDF, file_path, unit["id"], unit["contentId"])
+                    )
                 elif unit["contentType"] == RICH_TEXT:
                     if unit.get("jsonContent"):
                         json_content = eval(unit["jsonContent"])
@@ -252,7 +282,9 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
                             cnt_3=get_section_num(courseware_num, level=3),
                             chapter_name=repair_filename(chapter["name"]),
                             lesson_name=repair_filename(lesson["name"]),
-                            unit_name=repair_filename(os.path.splitext(json_content["fileName"])[0])
+                            unit_name=repair_filename(
+                                os.path.splitext(json_content["fileName"])[0]
+                            )
                             + os.path.splitext(json_content["fileName"])[1],
                         )
                         touch_dir(os.path.dirname(file_path))
@@ -290,7 +322,9 @@ if __name__ == "__main__":
 
     # 登录并获取信息
     token = login(CONFIG["username"], CONFIG["password"])
-    match_obj = re.match(r"https?://www.icourse163.org(/spoc)?/(course|learn)/\w+-(\d+)", url)
+    match_obj = re.match(
+        r"https?://www.icourse163.org(/spoc)?/(course|learn)/\w+-(\d+)", url
+    )
     if match_obj is None:
         print("无法解析的链接：{}，请检查链接是否错误……".format(url))
         sys.exit(1)
@@ -313,9 +347,11 @@ if __name__ == "__main__":
     for i, resource in enumerate(resource_list):
         print("parse_resource {}/{}".format(i, len(resource_list)), end="\r")
         url, file_path, params = parse_resource(resource, token)
+        if url is None:
+            continue
         # 过滤掉已经下载的资源
         if os.path.exists(file_path) and not CONFIG["overwrite"]:
-            print("[info] {} already exists!".format(file_path))
+            print("[INFO] {} already exists!".format(file_path))
             continue
         if ".m3u8" in url:
             merge_file = {"target": file_path, "segments": []}
