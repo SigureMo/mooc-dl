@@ -229,6 +229,9 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
     resource_list = []
 
     course_info = get_courseinfo(term_id, token)
+    if course_info["results"] is None:
+        print(f"[ERROR] 无法获取课件信息！原因：「{course_info['status']['message']}」，疑似该课程已关闭")
+        sys.exit(1)
     for chapter_num, chapter in enumerate(course_info.get("results").get("termDto").get("chapters")):
         for lesson_num, lesson in enumerate(chapter.get("lessons") if chapter.get("lessons") is not None else []):
             for unit_num, unit in enumerate(lesson.get("units")):
