@@ -19,7 +19,9 @@ class FFmpeg:
         try:
             if (
                 subprocess.run(
-                    [ffmpeg_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                    [ffmpeg_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
                 ).returncode
                 != 1
             ):
@@ -59,18 +61,15 @@ class FFmpeg:
         """将视频拼接起来"""
 
         concat_list_path = os.path.join(
-            self.tmp_dir, "concat_list_{:04}.tmp".format(random.randint(0, 9999))
+            self.tmp_dir,
+            "concat_list_{:04}.tmp".format(random.randint(0, 9999)),
         ).replace("\\", "/")
         with open(concat_list_path, "w", encoding="utf-8") as f:
             for video_path in video_path_list:
                 if os.path.isfile(video_path):
                     video_relpath = os.path.relpath(video_path, start=self.tmp_dir)
                     video_abspath = os.path.abspath(video_path)
-                    write_path = (
-                        video_relpath
-                        if platform.system() == "Windows"
-                        else video_abspath
-                    )
+                    write_path = video_relpath if platform.system() == "Windows" else video_abspath
                     f.write("file '{}'\n".format(write_path))
         # fmt: off
         params = [

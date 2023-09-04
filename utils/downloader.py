@@ -45,9 +45,7 @@ class NetworkFile:
         headers = dict(self.spider.headers)
         headers["Range"] = "bytes=0-4"
         try:
-            res = self.spider.head(
-                self.url, headers=headers, allow_redirects=True, timeout=20
-            )
+            res = self.spider.head(self.url, headers=headers, allow_redirects=True, timeout=20)
             crange = res.headers["Content-Range"]
             self.total = int(re.match(r"^bytes 0-4/(\d+)$", crange).group(1))
             return
@@ -82,9 +80,7 @@ class NetworkFile:
 
                 try:
                     # 尝试建立连接
-                    res = self.spider.get(
-                        self.url, stream=True, headers=headers, timeout=(5, 10)
-                    )
+                    res = self.spider.get(self.url, stream=True, headers=headers, timeout=(5, 10))
                     # 下载到临时路径
                     with open(self.tmp_path, "ab") as f:
                         if stream:
@@ -175,9 +171,7 @@ class FileManager:
             else:
                 if log:
                     print("------> {}".format(file_name))
-                file = NetworkFile(
-                    url, file_path, overwrite=self.overwrite, spider=self.spider
-                )
+                file = NetworkFile(url, file_path, overwrite=self.overwrite, spider=self.spider)
                 task = Task(file.download)
                 self.pool.add_task(task)
                 self.files.append(file)
@@ -224,9 +218,7 @@ class FileManager:
                     line = line.replace(
                         center_placeholder,
                         max(
-                            max_length
-                            - get_string_width(line)
-                            + len(center_placeholder),
+                            max_length - get_string_width(line) + len(center_placeholder),
                             0,
                         )
                         * "-",
