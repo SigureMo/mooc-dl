@@ -230,7 +230,10 @@ def get_resource(term_id, token, file_types=[VIDEO, PDF, RICH_TEXT]):
 
     course_info = get_courseinfo(term_id, token)
     if course_info["results"] is None:
-        print(f"[ERROR] 无法获取课件信息！原因：「{course_info['status']['message']}」，疑似该课程已关闭")
+        print(f"[ERROR] 无法获取课件信息！原因：「{course_info['status']['message']}」，请确保以下步骤已经完成：")
+        print(f"* 修改默认账号密码为自己的账号密码（仅支持爱课程账号）")
+        print(f"* 已经参加该课程")
+        print(f"* 该课程处于未关闭状态")
         sys.exit(1)
     for chapter_num, chapter in enumerate(course_info.get("results").get("termDto").get("chapters")):
         for lesson_num, lesson in enumerate(chapter.get("lessons") if chapter.get("lessons") is not None else []):
